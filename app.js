@@ -27,7 +27,7 @@ function setMode(up) {
   $('#authBtn').textContent = up ? 'Create account' : 'Log in';
   box.classList.remove('swap'); void box.offsetWidth; box.classList.add('swap'); if (up) setTimeout(() => box.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 120);
 }
-$('#eye').onclick = () => { const p = $('#pw'), h = p.type === 'password'; p.type = h ? 'text' : 'password'; $('#eye').textContent = h ? '🙈' : '👁'; };
+$('#eye').onclick = () => { const p = $('#pw'), h = p.type === 'password'; p.type = h ? 'text' : 'password'; $('#eye').textContent = h ? 'Hide' : 'Show'; };
 $('#pw').oninput = () => { const v = $('#pw').value, n = (v.length >= 8) + /[A-Z]/.test(v) + /\d/.test(v) + /[^\w\s]/.test(v) + (v.length >= 12), m = $('#mt'); m.style.width = Math.min(100, n * 20 + (v ? 10 : 0)) + '%'; m.style.background = n < 2 ? '#e0523f' : n < 4 ? '#f0a92e' : '#2fb36b'; $('#mtx').textContent = !v ? 'Use 8+ characters with letters and numbers' : n < 2 ? 'Weak password' : n < 4 ? 'Fair: add numbers or symbols' : 'Strong password'; };
 $('#tabs').onclick = e => { const b = e.target.closest('button'); b && setMode(b.dataset.m === 'up'); };
 $('#forgot').onclick = async e => {
@@ -99,11 +99,50 @@ Object.assign(FORMS, {
 });
 const MORE = [['events'],['lostfound'],['complaints'],['programs'],['jobs'],['ordinances'],['budget'],['evac'],['health'],['garbage'],['relief'],['reports'],['idapps'],['appointments'],['suggestions'],['registry'],['volunteers'],['polls'],['households'],['map'],['officials'],['hotlines'],['myid'],['gobag'],['residents'],['broadcast'],['backup'],['settings'],['about'],['profile']], OFFONLY = ['residents','broadcast','backup'];
 const NAME = { about:'About this app', myid:'Digital ID', gobag:'Go-bag', settings:'Settings', broadcast:'Broadcast', backup:'Backup', residents:'Residents', map:'Live map', officials:'Directory', hotlines:'Hotlines', profile:'My profile', polls:'Polls' };
+const DESC = {
+  announcements:['Official notices from the barangay: schedules, advisories and programs.','Check this page regularly. Officials publish; residents read.','Publish notices to all residents. Keep titles short and put the date or venue in the message.'],
+  requests:['Request barangay certificates: Clearance, Indigency, Residency and Business Permit.','Your account must be verified first. Choose the certificate, state the purpose and send. You are notified when it is Approved. Bring a valid ID when claiming. Fees and processing time follow barangay policy.','Review each request and set its status (Pending, Approved, Rejected, Released). Residents are notified automatically. Print the certificate once approved.'],
+  complaints:['File a complaint or blotter report with the barangay.','State the subject, what happened, date, place and people involved. Officials update the status. For emergencies call 911.','Update the status as the case progresses. Use Print report or Export CSV for records.'],
+  events:['Upcoming barangay events and activities.','Check the date and venue before attending.','Add events with date, venue and details.'],
+  lostfound:['Post lost or found items so neighbors can help.','Describe the item, where and when, and how to contact you. Delete your post once resolved.'],
+  programs:['Barangay programs and services open to residents.','Read the requirements and schedule, then visit the barangay hall to apply.','Add each program with its requirements and schedule.'],
+  jobs:['Job openings shared by the barangay and local employers.','Contact the employer or barangay hall listed in each post.','Post openings with requirements and where to apply.'],
+  ordinances:['Official ordinances and resolutions of the barangay.','Read summaries here. Ask the barangay hall for the full copy.','Publish each ordinance with its number and a short summary.'],
+  budget:['Transparency board: projects and amounts spent by the barangay.','Each record shows the project and the amount in PHP.','Add records of projects and expenses. Keep them accurate and up to date.'],
+  evac:['Evacuation centers with their capacity and address.','Know your nearest center before a typhoon or flood. Follow officials during evacuations.','Add each center with its capacity and directions.'],
+  health:['Health and vaccination schedules in the barangay.','Check the date, venue and who may join.','Post each health activity with date, venue and eligibility.'],
+  garbage:['Waste collection schedule per purok or area.','Look for your purok and put waste out on the listed days.','Add the collection days and times per area.'],
+  relief:['Relief goods and assistance distributions.','Check who qualifies and where to claim. Bring a valid ID.','Announce each distribution with the date, qualifications and claiming place.'],
+  reports:['Report community problems such as broken streetlights, roads or drainage.','Describe the problem and exact location. Track the status: Reported, Working, Fixed. Photo upload may be unavailable.','Update the status as work progresses. Residents are notified.'],
+  idapps:['Apply for a Barangay ID.','Provide birthdate, address and an emergency contact. Bring a valid ID to the barangay hall to claim it when Ready.','Review applications and set the status to Approved, then Ready.'],
+  appointments:['Book a schedule with barangay officials, such as mediation or consultation.','Choose a date and state the reason. Wait for Confirmed before going.','Confirm, complete or cancel appointments.'],
+  suggestions:['A private suggestion box for your ideas and concerns.','Only you and barangay officials can see what you send.','Read suggestions and consider them in planning.'],
+  registry:['Registry of senior citizens, PWDs, solo parents and 4Ps members.','Register so the barangay can prioritize assistance. Your entry is private to you and officials.','Use this list to plan assistance. Handle it confidentially under the Data Privacy Act.'],
+  volunteers:['Sign up to help in barangay activities.','Tell us what you can help with and when you are available.','Contact volunteers when help is needed.'],
+  households:['Household records for the barangay database.','Enter the household head, number of members and notes (senior, PWD, 4Ps). Entries are private to you and officials.','Review household data. Print or export for planning. Keep it confidential.'],
+  polls:['Polls and surveys on barangay matters.','Choose one option. You can vote once per poll.','Publish questions with comma-separated options and review results.'],
+  map:['Live map of residents who choose to share their location.','Tap Share my location to let officials see where you are. Tap Stop sharing anytime.','See residents who are sharing their location, for example during emergencies.'],
+  officials:['Directory of barangay officials and their contact numbers.','Use it to reach the right official.','Add or edit officials and their contact numbers.'],
+  hotlines:['Emergency hotline numbers.','Tap a number to call. For life-threatening emergencies call 911 first.'],
+  myid:['Your digital barangay ID with a QR code.','Show it at the barangay hall. A Verified badge appears after officials verify your account.'],
+  gobag:['Checklist of items for your emergency go-bag.','Tick items as you prepare them. Your checklist is saved on this device.'],
+  residents:['List of registered residents.','Verify each resident after checking their valid ID. Verified residents can request certificates. Promote officials carefully.'],
+  broadcast:['Send one message to all residents at once.','Write a short, clear message. Each resident gets it as a notification. Use only for important notices.'],
+  backup:['Download all barangay data as a file.','Do this regularly and store the file safely. It contains personal data, so do not share it.'],
+  settings:['Personalize display mode, theme, text size and colors.','Changes are saved on this device only.'],
+  profile:['Your account details.','Keep your name, purok and mobile number correct so officials can reach you.'],
+  sos:['Send an emergency alert to barangay officials.','Your name, purok and location are sent. Officials see it only while the app is open, so also call 911.'],
+  alerts:['Emergency alerts from residents.','Respond to every alert and call the resident back.'],
+  chat:['Barangay group chat and a help desk.','Choose the group chat or message the officials privately. Be respectful.','Reply to residents in the help desk. Be respectful.'],
+  notes:['Notifications about your requests and announcements.','New items are marked New and clear after you open this page.'],
+  dash:['Overview of requests, complaints, alerts and residents.','Check Pending requests and Open complaints daily.']
+};
+const infoOf = v => { const x = DESC[v]; if (!x) return ''; const off = me.role === 'official'; return `<div class="info"><p>${esc(off && x[2] ? x[2] : x[0])}</p>${x[1] && !(off && x[2]) ? `<small><b>How it works:</b> ${esc(x[1])}</small>` : ''}</div>`; };
 function more(el) {
   const off = me.role === 'official', nk = [...document.querySelectorAll('#nav button')].map(b => b.dataset.v);
   const L = MORE.map(m => m[0]).filter(k => !nk.includes(k) && !(k === 'myid' && off) && !(OFFONLY.includes(k) && !off));
-  el.innerHTML = '<h2>All services</h2><input id="q" placeholder="Search services"><div class="quick big" id="g"></div>';
-  const draw = () => { const k = $('#q').value.toLowerCase(); $('#g').innerHTML = L.filter(x => (NAME[x] || FORMS[x].title).toLowerCase().includes(k)).map(x => `<button data-v="${x}"><em>${IC[x] || '•'}</em>${NAME[x] || FORMS[x].title}</button>`).join(''); };
+  el.innerHTML = '<h2>All services</h2><input id="q" placeholder="Search services"><div class="svclist" id="g"></div>';
+  const draw = () => { const k = $('#q').value.toLowerCase(); $('#g').innerHTML = L.filter(x => ((NAME[x] || FORMS[x].title) + ' ' + (DESC[x]?.[0] || '')).toLowerCase().includes(k)).map(x => `<button data-v="${x}"><em>${IC[x] || '•'}</em><span><b>${NAME[x] || FORMS[x].title}</b><small>${esc(DESC[x]?.[0] || '')}</small></span></button>`).join('') || '<div class="empty">No matching service.</div>'; };
   $('#q').oninput = draw; draw(); $('#g').onclick = e => { const b = e.target.closest('button'); b && go(b.dataset.v); };
 }
 function myid(el) {
@@ -174,6 +213,7 @@ function go(v) {
   document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v || (b.dataset.v === 'more' && !document.querySelector('#nav [data-v="' + v + '"]'))));
   const el = $('#view'); unsub && unsub(); el.innerHTML = '';
   ({ about, more, myid, broadcast, backup, gobag, settings, home, hotlines, dash, sos, alerts, residents, profile, polls, notes, map: livemap, chat }[v] || (() => page(v, el)))(el);
+  if (v !== 'more' && v !== 'home' && v !== 'about') { const h = el.querySelector('h2'); h && h.insertAdjacentHTML('afterend', infoOf(v)); }
 }
 
 function printCert(r) {
@@ -209,7 +249,7 @@ function page(col, el) {
       ${off && F.st ? F.st.map(s => `<button class="btn sm ${s === r.status ? 'gold' : ''}" data-id="${r.id}" data-s="${s}">${s}</button>`).join('') : ''}
       ${F.cert && ['Approved', 'Released'].includes(r.status) ? `<button class="btn sm" data-p="${r.id}">Print certificate</button>` : ''}
       ${off && F.post === 'official' ? `<button class="btn sm" data-edit="${r.id}">Edit</button>` : ''}
-      ${(off || r.uid === me.uid) && !F.st ? `<button class="btn sm red" data-del="${r.id}">Delete</button>` : ''}</div></div>`).join('') : '<div class="empty">Nothing here yet.</div>';
+      ${(off || r.uid === me.uid) && !F.st ? `<button class="btn sm red" data-del="${r.id}">Delete</button>` : ''}</div></div>`).join('') : `<div class="empty">Nothing here yet.${canPost ? ' Use the form above to add the first entry.' : ' Please check back soon.'}</div>`;
   };
   $('#q').oninput = draw; if ($('#rep')) { $('#rep').onclick = () => printReport(F, all); $('#csv').onclick = () => csv(F, all); }
   live(col, (F.st || F.private) && !off, rows => { all = rows; draw(); });
@@ -383,7 +423,7 @@ function chat(el) {
 function home(el) {
   const h = new Date().getHours(), g = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
   const Q = [['sos','🆘','SOS'],['requests','📄','Certificate'],['complaints','📝','Complaint'],['chat','💬','Chat'],['map','🗺️','Live map'],['hotlines','☎️','Hotlines']];
-  el.innerHTML = `<div class="hero"><small>${g},</small><h1>${esc(me.name.split(' ')[0])} 👋</h1><div class="wx" id="wx">Loading weather…</div><span class="badge ${me.verified ? 'Approved' : 'Pending'}">${me.verified ? '✔ Verified resident' : 'Not yet verified'}</span></div>
+  el.innerHTML = `<div class="hero"><small>${g},</small><h1>${esc(me.name.split(' ')[0])}</h1><div class="wx" id="wx">Loading weather…</div><span class="badge ${me.verified ? 'Approved' : 'Pending'}">${me.verified ? 'Verified resident' : 'Not yet verified'}</span></div>
   <div class="quick">${Q.map(q => `<button data-v="${q[0]}"><em>${q[1]}</em>${q[2]}</button>`).join('')}</div><h3 class="sec">Latest announcements</h3><div id="list"></div>`;
   $('.quick').onclick = e => { const b = e.target.closest('button'); b && go(b.dataset.v); };
   fetch('https://api.open-meteo.com/v1/forecast?latitude=11.1086&longitude=122.6431&current=temperature_2m,weather_code,wind_speed_10m').then(r => r.json()).then(d => { const c = d.current, k = c.weather_code; $('#wx') && ($('#wx').innerHTML = `<b>${k == 0 ? '☀️' : k < 4 ? '⛅' : k < 50 ? '🌫️' : k < 70 ? '🌧️' : '⛈️'} ${Math.round(c.temperature_2m)}°C</b> Passi City · wind ${Math.round(c.wind_speed_10m)} km/h`); }).catch(() => $('#wx') && ($('#wx').textContent = 'Weather unavailable offline'));
