@@ -10,7 +10,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const fmt = t => t?.toDate ? t.toDate().toLocaleString('en-PH', {dateStyle:'medium', timeStyle:'short'}) : '';
 document.documentElement.dataset.theme = localStorage.theme || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
 $('#tout').onclick = () => $('#logout').click();
-$('#theme').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = localStorage.theme = t; };
+$('#theme').onclick = e => themeSwap(() => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = localStorage.theme = t; }, e);
 let me = null, nUnsub = null, uUnsub = null, watchId = null, unsub = null, registering = false, signup = false;
 
 addEventListener('unhandledrejection', e => { console.error(e.reason); toast(e.reason?.code === 'permission-denied' ? 'Not allowed for your account.' : 'Something went wrong. Please try again.'); });
@@ -38,7 +38,7 @@ $('#forgot').onclick = async e => {
 $('#authForm').onsubmit = async e => {
   e.preventDefault();
   const f = Object.fromEntries(new FormData(e.target));
-  if (!f.email.includes('@')) f.email = f.email.trim().toLowerCase() + '@mantulang.ph';
+  f.email = f.email.trim(); if (!f.email.includes('@')) f.email = f.email.toLowerCase() + '@mantulang.ph';
   try {
     if (signup) {
       if (!f.name?.trim()) return toast('Enter your full name');
@@ -56,8 +56,9 @@ onAuthStateChanged(auth, u => { if (registering) return; u ? boot(u) : (me = nul
 
 async function boot(u) {
   const s = await getDoc(doc(db, 'users', u.uid));
-  if (!s.exists()) { toast('Profile not found'); return signOut(auth); }
-  me = { uid: u.uid, ...s.data() };
+  let d0 = s.exists() ? s.data() : null;
+  if (!d0) { try { d0 = { name: (u.email || '').split('@')[0], purok: '', email: u.email || '', role: 'resident', verified: false, createdAt: serverTimestamp() }; await setDoc(doc(db, 'users', u.uid), d0); } catch (_) { toast('Profile not found'); return signOut(auth); } }
+  me = { uid: u.uid, ...d0 };
   $('#auth').hidden = true; $('#app').hidden = false;
   $('#whoName').textContent = me.name; setRole();
   const nav = me.role === 'official'
@@ -179,14 +180,14 @@ function settings(el) {
     <div class="card"><h3>Text size</h3><input type="range" id="fs" min="14" max="22" value="${parseInt(localStorage.fs) || 16}"></div>
     <div class="card"><h3>Color theme</h3><div class="swatches" id="ac">${PAL.map(p => `<button class="sw ${cur === p[1] + ',' + p[2] ? 'on' : ''}" data-a="${p[1]},${p[2]}"><i style="background:linear-gradient(135deg,${p[1]},${p[2]})"></i>${p[0]}</button>`).join('')}</div></div>`;
     $('#vm').onclick = e => { const b = e.target.closest('button'); if (b) { localStorage.vm = b.dataset.v; location.reload(); } };
-    $('#th').onclick = e => { const b = e.target.closest('button'); if (b) { document.documentElement.dataset.theme = localStorage.theme = b.dataset.v; draw(); } };
+    $('#th').onclick = e => { const b = e.target.closest('button'); if (b) { themeSwap(() => { document.documentElement.dataset.theme = localStorage.theme = b.dataset.v; draw(); }, e); } };
     $('#fs').oninput = e => { localStorage.fs = e.target.value; applyPrefs(); };
     $('#ac').onclick = e => { const b = e.target.closest('button'); if (b) { localStorage.acc2 = b.dataset.a; applyPrefs(); draw(); } };
   };
   draw();
 }
 function about(el) {
-  el.innerHTML = `<div class="hero"><small>About this app</small><h1>Barangay Mantulang</h1><p>Version 3.1 · Passi City, Iloilo</p></div>
+  el.innerHTML = `<div class="hero"><small>About this app</small><h1>Barangay Mantulang</h1><p>Version 4.0 · Futuristic edition · Passi City, Iloilo</p></div>
   <div class="card"><h3>What is this app?</h3><p>A community app that brings barangay services to residents' phones: announcements, certificate requests, complaints, emergency alerts, a live map, chat and more. Officials manage everything from one dashboard.</p></div>
   <div class="card"><h3>Key features</h3><p>Certificates and Barangay ID · Complaints and blotter · SOS alerts · Live map · Chats and polls · Programs, jobs, ordinances and budget transparency · Digital ID · Installable and offline-ready.</p></div>
   <div class="card"><h3>Privacy Notice (RA 10173)</h3><p>Barangay Mantulang collects your name, purok and contact details, and, only if you submit them, household, senior/PWD records, requests and live location. These are used only for barangay services and are visible only to you and authorized officials. Data is not sold or shared outside the barangay unless required by law. You may ask to view, correct or delete your data at the barangay hall. <i>Ang iyong datos ay gagamitin lamang sa serbisyo ng barangay.</i></p></div>
@@ -216,10 +217,11 @@ function go(v) {
   document.querySelectorAll('#nav button').forEach(b => b.classList.contains('on') ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
   const L0 = el.querySelector('#list'); if (L0 && !L0.innerHTML) L0.innerHTML = '<div class="skl"></div>'.repeat(3);
   if (v !== 'more' && v !== 'home' && v !== 'about') { const h = el.querySelector('h2'); h && h.insertAdjacentHTML('afterend', infoOf(v)); }
+  fxText(el.querySelector('h2,.hero h1'));
 }
 
 function printCert(r) {
-  const w = window.open('', '_blank');
+  const w = window.open('', '_blank'); if (!w) return toast('Allow pop-ups to print');
   w.document.write(`<body style="font-family:Georgia,serif;max-width:680px;margin:60px auto;text-align:center"><h3>Republic of the Philippines<br>Barangay Mantulang, Passi City, Iloilo</h3><h1>${esc(r.title).toUpperCase()}</h1><p style="text-align:left;line-height:2;margin-top:40px">TO WHOM IT MAY CONCERN:<br>This certifies that <b>${esc(r.name)}</b>, of ${esc(r.purok) || 'this barangay'}, is a resident of Barangay Mantulang, Passi City. This certification is issued upon request for: <i>${esc(r.body)}</i>.<br>Issued on ${new Date().toLocaleDateString('en-PH', {dateStyle:'long'})}.</p><p style="margin-top:100px">______________________<br><b>Punong Barangay</b></p><script>onload=()=>print()<\/script></body>`);
   w.document.close();
 }
@@ -258,7 +260,7 @@ function page(col, el) {
   $('#list').onclick = async e => {
     const b = e.target;
     if (b.dataset.s) { await updateDoc(doc(db, col, b.dataset.id), { status: b.dataset.s }); const r = all.find(x => x.id === b.dataset.id); await addDoc(collection(db, 'notifications'), { to: r.uid, text: 'Your ' + r.title + ' is now ' + b.dataset.s, read: false, createdAt: serverTimestamp() }); toast('Marked ' + b.dataset.s); }
-    if (b.dataset.edit) { const r = all.find(x => x.id === b.dataset.edit), t = prompt('Title', r.title); if (t === null) return; const bd = prompt('Details', r.body ?? ''); await updateDoc(doc(db, col, r.id), { title: t, ...(bd !== null ? { body: bd } : {}) }); toast('Updated'); }
+    if (b.dataset.edit) { const r = all.find(x => x.id === b.dataset.edit), v = await askText('Edit entry', [['Title', r.title], ['Details', r.body ?? '']]); if (!v) return; await updateDoc(doc(db, col, r.id), { title: v[0].trim() || r.title, ...(r.body !== undefined || v[1] ? { body: v[1] } : {}) }); toast('Updated'); }
     if (b.dataset.p) printCert(all.find(r => r.id === b.dataset.p));
     if (b.dataset.del && await ask('Delete this entry?')) { await deleteDoc(doc(db, col, b.dataset.del)); toast('Deleted'); }
   };
@@ -275,10 +277,12 @@ function profile(el) {
 }
 
 async function dash(el) {
+  const tk = dash.t = (dash.t || 0) + 1;
   el.innerHTML = '<h2>Dashboard</h2><div class="stats" id="st"></div>';
   const defs = [['users','Residents'],['requests','Requests'],['complaints','Complaints'],['alerts','Alerts'],['households','Households']];
   const snaps = await Promise.all(defs.map(d => getDocs(collection(db, d[0]))));
-  $('#st').innerHTML = defs.map((d, i) => `<div class="stat" style="animation-delay:${i * 80}ms"><b data-n="${snaps[i].size}">0</b>${d[1]}</div>`).join('');
+  if (tk !== dash.t || !$('#st')) return;
+  $('#st').innerHTML = defs.map((d, i) => `<div class="stat" style="animation-delay:${i * 80}ms"><b data-n="${i === 0 ? snaps[0].docs.filter(d => d.data().role === 'resident').length : snaps[i].size}">0</b>${d[1]}</div>`).join('');
   const pk = {}; snaps[0].docs.map(d => d.data()).filter(u => u.role === 'resident').forEach(u => { const p = u.purok || 'No purok'; pk[p] = (pk[p] || 0) + 1; }); const mx = Math.max(1, ...Object.values(pk));
   $('#view').insertAdjacentHTML('beforeend', '<h3 class="sec">Residents per purok</h3>' + Object.entries(pk).map(([p, n]) => `<div class="bar"><i style="width:${n * 100 / mx}%"></i><span>${esc(p)}: ${n}</span></div>`).join(''));
   const pend = snaps[1].docs.filter(d => d.data().status === 'Pending').length, opn = snaps[2].docs.filter(d => d.data().status !== 'Resolved').length;
@@ -316,7 +320,7 @@ function residents(el) {
 
 /* ---------- Reports, polls, notifications ---------- */
 function printReport(F, rows) {
-  const w = window.open('', '_blank');
+  const w = window.open('', '_blank'); if (!w) return toast('Allow pop-ups to print');
   w.document.write(`<body style="font-family:sans-serif;margin:30px"><h2>Barangay Mantulang, Passi City: ${esc(F.title)} report</h2><p>Generated ${new Date().toLocaleString('en-PH')}</p><table border="1" cellpadding="6" style="border-collapse:collapse;width:100%;font-size:13px"><tr>${F.cols.map(c => `<th>${c[0]}</th>`).join('')}</tr>${rows.map(r => `<tr>${F.cols.map(c => `<td>${esc(c[1](r))}</td>`).join('')}</tr>`).join('')}</table><p style="margin-top:40px">Choose "Save as PDF" in the print dialog.</p><script>onload=()=>print()<\/script></body>`);
   w.document.close();
 }
@@ -361,7 +365,7 @@ function watchNotes() {
   nUnsub = onSnapshot(query(collection(db, 'notifications'), where('to', '==', me.uid)), s => {
     me.notes = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
     const u = me.notes.filter(n => !n.read).length, b = document.querySelector('[data-v=notes]');
-    if (b) b.lastChild.textContent = 'Notifications' + (u ? ` (${u})` : '');
+    if (b) b.querySelector('span').textContent = 'Notifications' + (u ? ` (${u})` : '');
     if (!first) s.docChanges().filter(c => c.type === 'added').forEach(c => { toast(c.doc.data().text); if (window.Notification && Notification.permission === 'granted') new Notification('Barangay Mantulang', { body: c.doc.data().text }); });
     first = false;
   });
@@ -381,7 +385,7 @@ function livemap(el) {
   const off = me.role === 'official';
   el.innerHTML = `<h2>Live map</h2><div class="card row"><span class="muted">${off ? 'Residents who share their location appear here.' : 'Share your live location with barangay officials. Only officials can see it.'}</span><button class="btn sm" id="gt">${watchId != null ? 'Stop sharing' : 'Share my location'}</button></div><div id="map"></div>`;
   const m = L.map('map').setView([11.1086, 122.6431], 14), mk = {}; let fitted = false;
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(m);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(m); setTimeout(() => m.invalidateSize(), 700);
   const upd = (id, d) => {
     if (!d) { if (mk[id]) { m.removeLayer(mk[id]); delete mk[id]; } return; }
     const p = [d.lat, d.lng];
@@ -489,7 +493,7 @@ var animUntil = 0;
   new MutationObserver(() => { r.classList.add('tt'); setTimeout(() => r.classList.remove('tt'), 600); }).observe(r, { attributes: true, attributeFilter: ['data-theme'] });
   let tl = null;
   document.addEventListener('pointermove', e => {
-    if (e.pointerType !== 'mouse') return; const t = e.target.closest('.hero,.idcard');
+    if (e.pointerType !== 'mouse') return; const t = e.target.closest('.hero,.idcard,.stat');
     if (tl && tl !== t) tl.style.transform = ''; tl = t; if (!t) return;
     const b = t.getBoundingClientRect(), x = (e.clientX - b.left) / b.width - .5, y = (e.clientY - b.top) / b.height - .5;
     t.style.transform = `perspective(800px) rotateX(${-y * 5}deg) rotateY(${x * 6}deg) translateY(-2px)`;
@@ -522,7 +526,7 @@ function ask(msg, ok = 'Confirm') {
     const nav = [...document.querySelectorAll('#nav button')].map(b => [b.dataset.v, b.textContent.trim()]).filter(x => x[0] !== 'more');
     const off = me.role === 'official', seen = new Set(nav.map(x => x[0]));
     const items = nav.concat(MORE.map(m => m[0]).filter(k => !seen.has(k) && !(k === 'myid' && off) && !(OFFONLY.includes(k) && !off)).map(k => [k, NAME[k] || FORMS[k].title]));
-    const o = document.createElement('div'); o.id = 'cmd'; o.className = 'modal top';
+    const o = document.createElement('div'); o.id = 'cmd'; o.className = 'modal ptop';
     o.innerHTML = '<div class="dlg pal" role="dialog" aria-label="Search"><input id="cq" placeholder="Search pages and services…" autocomplete="off"><div id="cl" role="listbox"></div><small class="muted">↑ ↓ to move · Enter to open · Esc to close</small></div>';
     let sel = 0, cur = items; const close = () => { document.removeEventListener('keydown', kd); o.classList.add('bye'); setTimeout(() => o.remove(), 250); };
     const draw = () => { $('#cl').innerHTML = cur.map((x, i) => `<button data-v="${x[0]}" class="${i === sel ? 'on' : ''}"><em>${IC[x[0]] || '•'}</em>${esc(x[1])}</button>`).join('') || '<div class="empty">No results</div>'; const s = $('#cl .on'); s && s.scrollIntoView({ block: 'nearest' }); };
@@ -535,3 +539,38 @@ function ask(msg, ok = 'Confirm') {
   const sb = document.createElement('button'); sb.className = 'link'; sb.textContent = 'Search (Ctrl K)'; sb.onclick = open; $('.who').prepend(sb);
   const tb = document.createElement('button'); tb.className = 'top-out'; tb.textContent = '🔍'; tb.setAttribute('aria-label', 'Search'); tb.style.marginLeft = 'auto'; tb.onclick = open; $('.top').insertBefore(tb, $('#tout')); $('#tout').style.marginLeft = '0';
 }
+
+/* ---------- v13: futuristic FX ---------- */
+const RM = matchMedia('(prefers-reduced-motion:reduce)').matches;
+function themeSwap(fn, ev) {
+  if (!document.startViewTransition || RM) return fn();
+  const x = ev?.clientX ?? innerWidth / 2, y = ev?.clientY ?? 0, r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+  document.startViewTransition(fn).ready.then(() => document.documentElement.animate({ clipPath: [`circle(0 at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] }, { duration: 700, easing: 'cubic-bezier(.16,1,.3,1)', pseudoElement: '::view-transition-new(root)' })).catch(() => {});
+}
+function fxText(h) {
+  if (!h || RM) return; const s = h.textContent, G = '01<>/[]#$%&*+=', t0 = performance.now();
+  (function f(t) { const p = Math.min(1, (t - t0) / 700); h.textContent = [...s].map((c, i) => c === ' ' || i < p * s.length ? c : G[Math.random() * G.length | 0]).join(''); p < 1 ? requestAnimationFrame(f) : h.textContent = s; })(t0);
+}
+function askText(title, fields) {
+  return new Promise(res => {
+    const o = document.createElement('div'); o.className = 'modal';
+    o.innerHTML = `<div class="dlg" role="dialog" aria-modal="true"><p>${esc(title)}</p>${fields.map(f => `<input placeholder="${esc(f[0])}" aria-label="${esc(f[0])}" value="${esc(f[1])}">`).join('')}<div class="row" style="justify-content:flex-end"><button class="btn gold" data-r="0">Cancel</button><button class="btn" data-r="1">Save</button></div></div>`;
+    const done = v => { o.classList.add('bye'); setTimeout(() => o.remove(), 250); res(v); };
+    o.onclick = e => { const b = e.target.closest('[data-r]'); if (b) done(b.dataset.r === '1' ? [...o.querySelectorAll('input')].map(x => x.value) : null); else if (e.target === o) done(null); };
+    document.body.append(o); o.querySelector('input').focus();
+  });
+}
+document.addEventListener('pointermove', e => { const t = e.target.closest?.('.card,.stat,.quick button,.svclist button'); if (!t) return; const b = t.getBoundingClientRect(); t.style.setProperty('--mx', e.clientX - b.left + 'px'); t.style.setProperty('--my', e.clientY - b.top + 'px'); }, { passive: true });
+(() => {
+  const c = $('#fx'); if (!c || RM) return; const g = c.getContext('2d'); let W, H, P = [], m = { x: -9e3, y: -9e3 }, col = '30,111,224', fr = 0;
+  const rs = () => { W = c.width = innerWidth; H = c.height = innerHeight; P = Array.from({ length: Math.min(55, Math.round(W * H / 24000)) }, () => ({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * .35, vy: (Math.random() - .5) * .35 })); };
+  addEventListener('resize', rs); rs(); addEventListener('pointermove', e => { m.x = e.clientX; m.y = e.clientY; }, { passive: true });
+  const hex = h => { const v = h.trim().replace('#', ''); return v.length === 6 ? [0, 2, 4].map(i => parseInt(v.slice(i, i + 2), 16)).join(',') : null; };
+  (function f() {
+    requestAnimationFrame(f); if (document.hidden) return;
+    if (!(fr++ % 90)) col = hex(getComputedStyle(document.documentElement).getPropertyValue('--green2')) || col;
+    g.clearRect(0, 0, W, H);
+    for (const p of P) { p.x += p.vx; p.y += p.vy; if (p.x < 0 || p.x > W) p.vx *= -1; if (p.y < 0 || p.y > H) p.vy *= -1; const dx = p.x - m.x, dy = p.y - m.y; if (dx * dx + dy * dy < 14400) { p.x += dx * .002; p.y += dy * .002; } g.fillStyle = `rgba(${col},.6)`; g.beginPath(); g.arc(p.x, p.y, 1.6, 0, 6.3); g.fill(); }
+    for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) { const dx = P[i].x - P[j].x, dy = P[i].y - P[j].y, d = dx * dx + dy * dy; if (d < 16900) { g.strokeStyle = `rgba(${col},${.28 * (1 - d / 16900)})`; g.beginPath(); g.moveTo(P[i].x, P[i].y); g.lineTo(P[j].x, P[j].y); g.stroke(); } }
+  })();
+})();

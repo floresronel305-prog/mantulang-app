@@ -405,7 +405,7 @@ html .badge{animation:badge .5s var(--spring) both}
 
 /* ===== v12: enterprise polish ===== */
 .modal{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:#06122acc;backdrop-filter:blur(6px);animation:fade .25s var(--ease)}
-.modal.top{align-items:start;padding-top:12vh}.modal.bye{animation:fadeOut .25s forwards}
+.modal.ptop{align-items:start;padding-top:12vh}.modal.bye{animation:fadeOut .25s forwards}
 @keyframes fadeOut{to{opacity:0}}
 .dlg{width:min(420px,100%);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 30px 80px #0008;animation:dlgIn .4s var(--spring)}
 .modal.bye .dlg{animation:dlgOut .25s forwards}
@@ -423,3 +423,68 @@ html .badge{animation:badge .5s var(--spring) both}
 #view:focus{outline:none}
 @media print{.side,.top,.fab,.toast,.offbar,.modal,#splash,body::before,body::after{display:none!important}.app{display:block}.card,.stat{box-shadow:none!important;break-inside:avoid;animation:none!important;opacity:1!important;transform:none!important}}
 .skip{position:fixed;left:12px;top:-60px;z-index:200;background:var(--navy);color:#fff;padding:10px 16px;border-radius:10px;transition:top .2s}.skip:focus{top:12px}
+
+/* ===== v13: FUTURISTIC HUD ===== */
+:root{--neon:var(--green2);--neon2:#7cc4ff;--ex:cubic-bezier(.16,1,.3,1)}
+[data-theme=dark]{--bg:#050b17;--card:#0a1730;--line:#1b2c4d}
+#fx{position:fixed;inset:0;z-index:-1;pointer-events:none}
+html body{background:radial-gradient(900px 560px at 12% -8%,color-mix(in srgb,var(--neon) 24%,transparent),transparent 62%),radial-gradient(800px 520px at 100% 105%,color-mix(in srgb,var(--neon2) 20%,transparent),transparent 62%),var(--bg)}
+html::before{content:"";position:fixed;inset:-60px;z-index:-1;pointer-events:none;background-image:linear-gradient(color-mix(in srgb,var(--neon) 14%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--neon) 14%,transparent) 1px,transparent 1px);background-size:56px 56px;-webkit-mask:radial-gradient(ellipse at 50% 30%,#000 10%,transparent 75%);mask:radial-gradient(ellipse at 50% 30%,#000 10%,transparent 75%);animation:gridMove 14s linear infinite}
+@keyframes gridMove{to{transform:translate(56px,56px)}}
+@property --a{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes ang{to{--a:360deg}}
+html .card,html .stat,html .quick button,html .svclist button{position:relative;isolation:isolate}
+html .card,html .stat{background:color-mix(in srgb,var(--card) 70%,transparent);-webkit-backdrop-filter:blur(14px) saturate(1.5);backdrop-filter:blur(14px) saturate(1.5);border:1px solid color-mix(in srgb,var(--neon) 24%,var(--line))}
+html .card::before,html .stat::before,html .quick button::before,html .svclist button::before{content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none;opacity:0;transition:opacity .35s;background:radial-gradient(220px circle at var(--mx,50%) var(--my,50%),color-mix(in srgb,var(--neon2) 28%,transparent),transparent 70%)}
+html .card:hover::before,html .stat:hover::before,html .quick button:hover::before,html .svclist button:hover::before{opacity:1}
+html .card::after,html .stat::after{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;pointer-events:none;opacity:0;transition:opacity .4s;background:conic-gradient(from var(--a),transparent 0 65%,var(--neon) 85%,var(--neon2));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:ang 3s linear infinite}
+html .card:hover::after,html .stat:hover::after{opacity:1}
+html .hero,html .idcard{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--navy),var(--neon) 140%);border:1px solid color-mix(in srgb,var(--neon2) 45%,transparent);box-shadow:0 16px 50px color-mix(in srgb,var(--neon) 35%,transparent)}
+html .hero::after,html .idcard::after{content:"";position:absolute;left:0;right:0;top:-40%;height:40%;background:linear-gradient(transparent,#ffffff2e,transparent);animation:scan 4.5s linear infinite;pointer-events:none}
+@keyframes scan{to{top:120%}}
+html .side{overflow:hidden;background:linear-gradient(180deg,color-mix(in srgb,var(--navy) 92%,#000),#040d22);border-right:1px solid color-mix(in srgb,var(--neon2) 25%,transparent)}
+html .side::after{content:"";position:absolute;right:0;top:0;width:2px;height:40%;background:linear-gradient(transparent,var(--neon2),transparent);box-shadow:0 0 14px var(--neon2);animation:streak 3.5s ease-in-out infinite}
+@keyframes streak{from{top:-40%}to{top:100%}}
+html[data-view=phone] .side::after{display:none}
+html #nav button.on{background:linear-gradient(90deg,color-mix(in srgb,var(--neon2) 90%,#fff),var(--neon2));color:#031636;animation:navOn .5s var(--spring),navGlow 2.6s ease-in-out .5s infinite}
+@keyframes navGlow{0%,100%{box-shadow:0 0 22px color-mix(in srgb,var(--neon2) 55%,transparent)}50%{box-shadow:0 0 38px color-mix(in srgb,var(--neon2) 90%,transparent)}}
+html .btn{background:linear-gradient(120deg,var(--navy),var(--neon));border:1px solid color-mix(in srgb,var(--neon2) 55%,transparent);box-shadow:0 8px 22px color-mix(in srgb,var(--neon) 38%,transparent)}
+html .btn:hover{background:linear-gradient(120deg,var(--navy),var(--neon));box-shadow:0 0 24px color-mix(in srgb,var(--neon2) 60%,transparent),0 10px 28px color-mix(in srgb,var(--neon) 45%,transparent)}
+html .btn::after{display:block!important}
+html .btn.gold{background:color-mix(in srgb,var(--neon) 12%,transparent);color:var(--ink);border:1px solid color-mix(in srgb,var(--neon) 50%,transparent);box-shadow:none}
+html .btn.gold:hover{background:color-mix(in srgb,var(--neon) 24%,transparent)}
+html .btn.red{background:linear-gradient(120deg,#8f1f17,#e24b40);border-color:#ff8a80}
+html input:focus,html select:focus,html textarea:focus{border-color:var(--neon);box-shadow:0 0 0 3px color-mix(in srgb,var(--neon) 25%,transparent),0 0 22px color-mix(in srgb,var(--neon) 30%,transparent)}
+html .view>h2{text-shadow:0 0 24px color-mix(in srgb,var(--neon) 45%,transparent)}
+html .view>h2::after{width:46px;background:linear-gradient(90deg,var(--neon2),transparent);box-shadow:0 0 12px var(--neon2)}
+html .stat b{background:linear-gradient(90deg,var(--neon),var(--neon2));-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 10px color-mix(in srgb,var(--neon) 55%,transparent))}
+html .rv{opacity:0;transform:translateY(26px) scale(.96);filter:blur(8px);transition:opacity .6s var(--ex),transform .8s var(--ex),filter .7s var(--ex),box-shadow .3s,border-color .3s;transition-delay:var(--d,0ms),var(--d,0ms),var(--d,0ms),0s,0s}
+html .rv.in{opacity:1;transform:none;filter:none}
+#view{position:relative}
+@keyframes viewIn{from{opacity:0;filter:blur(10px);transform:translateY(18px) scale(.985)}}
+#view.vin::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;z-index:5;pointer-events:none;background:linear-gradient(90deg,transparent,var(--neon2),transparent);box-shadow:0 0 20px var(--neon2);animation:sweep .9s var(--ex) forwards}
+@keyframes sweep{to{top:100vh;opacity:0}}
+html .bar{background:color-mix(in srgb,var(--neon) 12%,transparent);border:1px solid color-mix(in srgb,var(--neon) 25%,transparent);color:var(--ink)}
+html .bar i{background:linear-gradient(90deg,var(--neon),var(--neon2));box-shadow:0 0 18px color-mix(in srgb,var(--neon2) 70%,transparent)}
+html .badge{box-shadow:0 0 12px -3px currentColor}
+html .sos{background:radial-gradient(circle at 35% 30%,#ff7a6e,#c8372d 60%,#7d130c);box-shadow:0 0 50px #c8372d99,inset 0 0 30px #0005;position:relative;overflow:visible}
+html .sos::before{content:"";position:absolute;inset:-14px;border-radius:50%;pointer-events:none;background:conic-gradient(#ff5a4d00 0 60%,#ff5a4dcc);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));animation:spin 2.2s linear infinite}
+html .toast{background:color-mix(in srgb,var(--card) 85%,#000);color:var(--ink);border:1px solid var(--neon2);box-shadow:0 0 28px color-mix(in srgb,var(--neon2) 45%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+html .dlg{background:color-mix(in srgb,var(--card) 88%,transparent);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1px solid color-mix(in srgb,var(--neon2) 50%,transparent);box-shadow:0 0 60px color-mix(in srgb,var(--neon) 35%,transparent),0 30px 80px #0009}
+.dlg input{margin-bottom:10px}
+@keyframes dlgIn{from{opacity:0;transform:translateY(20px) scale(.9);filter:blur(8px)}}
+html .auth-box{border:1px solid color-mix(in srgb,var(--neon) 35%,transparent);box-shadow:0 0 60px color-mix(in srgb,var(--neon) 22%,transparent)}
+html .auth-art h1{text-shadow:0 0 30px #7cc4ff88}
+html .quick button{background:color-mix(in srgb,var(--card) 70%,transparent);border:1px solid color-mix(in srgb,var(--neon) 24%,var(--line))}
+html .quick button:hover{border-color:var(--neon2);box-shadow:0 0 22px color-mix(in srgb,var(--neon2) 40%,transparent)}
+html .empty::before{content:"◈";color:var(--neon2);animation:emp 3s ease-in-out infinite alternate}
+@keyframes emp{to{transform:translateY(-6px) scale(1.1)}}
+[data-theme=dark] .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)}
+#map{border:1px solid color-mix(in srgb,var(--neon) 35%,transparent)}
+/* splash HUD */
+#splash::before{content:"";position:absolute;inset:-50px;background-image:linear-gradient(#ffffff14 1px,transparent 1px),linear-gradient(90deg,#ffffff14 1px,transparent 1px);background-size:44px 44px;-webkit-mask:radial-gradient(circle at 50% 45%,#000,transparent 70%);mask:radial-gradient(circle at 50% 45%,#000,transparent 70%);animation:gridMove 6s linear infinite}
+.sp-logo::after{content:"";position:absolute;inset:-28px;border:1px dashed #ffffff99;border-radius:50%;animation:spin 18s linear infinite reverse}
+.sp-st{font:700 .72rem/1 ui-monospace,Menlo,monospace;letter-spacing:3px;opacity:.85;display:flex;gap:12px;animation:rise .6s 1.9s both}
+::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
+@media(prefers-reduced-motion:reduce){html::before,#fx{display:none}}
+@media print{#fx,html::before{display:none!important}}
