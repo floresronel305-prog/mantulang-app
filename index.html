@@ -39,6 +39,7 @@ setTimeout(out,3600);s.addEventListener('click',out)})()</script>
   <script>(function(){var c=document.getElementById('clk');function t(){c.textContent=new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit',hour12:false})+' PHT'}t();setInterval(t,30000)})()</script></div>
   <form id="authForm" class="auth-box">
     <div class="tabs" id="tabs" role="tablist"><i></i><button type="button" role="tab" data-m="in" class="on">Log in</button><button type="button" role="tab" data-m="up">Sign up</button></div>
+    <div id="accts" class="accts" hidden></div>
     <h2 id="authTitle">Welcome back</h2>
     <p class="muted sub" id="authSub">Log in to use barangay services.</p>
     <div id="regFields" hidden>
@@ -61,11 +62,11 @@ setTimeout(out,3600);s.addEventListener('click',out)})()</script>
 </section>
 
 <div id="app" class="app" hidden>
-  <header class="top"><span class="lgu sm"><svg viewBox="0 0 120 120"><use href="#lgu"/></svg><img src="lgu-logo.png" alt="" onload="this.parentNode.classList.add('real')"></span><div><b>Barangay Mantulang</b><small>LGU Passi City</small></div><button class="top-out" id="tout">Sign out</button></header>
+  <header class="top"><span class="lgu sm"><svg viewBox="0 0 120 120"><use href="#lgu"/></svg><img src="lgu-logo.png" alt="" onload="this.parentNode.classList.add('real')"></span><div><b>Barangay Mantulang</b><small>LGU Passi City</small></div><button class="top-out" id="tsw" aria-label="Switch account">⇄</button><button class="top-out" id="tout">Sign out</button></header>
   <aside class="side">
     <div class="brand"><span class="lgu sm"><svg viewBox="0 0 120 120"><use href="#lgu"/></svg><img src="lgu-logo.png" alt="" onload="this.parentNode.classList.add('real')"></span>Mantulang</div>
     <nav id="nav"></nav>
-    <div class="who"><b id="whoName"></b><span id="whoRole"></span><button class="link install" hidden>Install app</button><button class="link" id="vw">Desktop / phone view</button><button class="link" id="theme">Dark / light</button><button class="link" id="logout">Sign out</button></div>
+    <div class="who"><b id="whoName"></b><span id="whoRole"></span><button class="link install" hidden>Install app</button><button class="link" id="vw">Desktop / phone view</button><button class="link" id="theme">Dark / light</button><button class="link" id="swacc">Switch account</button><button class="link" id="logout">Sign out</button></div>
   </aside>
   <main id="view" class="view"></main>
 </div>

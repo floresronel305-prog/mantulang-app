@@ -52,13 +52,30 @@ $('#authForm').onsubmit = async e => {
   } catch (err) { registering = false; toast(err.code?.replace('auth/', '').replace(/-/g, ' ') || 'Something went wrong'); }
 };
 $('#logout').onclick = () => { if (watchId != null) { navigator.geolocation.clearWatch(watchId); watchId = null; deleteDoc(doc(db, 'locations', me.uid)); } signOut(auth); };
-onAuthStateChanged(auth, u => { if (registering) return; u ? boot(u) : (me = null, unsub && unsub(), nUnsub && nUnsub(), uUnsub && uUnsub(), $('#app').hidden = true, $('#auth').hidden = false); });
+/* ---- switch account + clickable dashboard ---- */
+const AK = 'mt_accts', getA = () => { try { return JSON.parse(localStorage[AK] || '[]'); } catch (_) { return []; } }, setA = a => { try { localStorage[AK] = JSON.stringify(a.slice(0, 5)); } catch (_) { } };
+const shown = e => String(e).replace('@mantulang.ph', '');
+function rememberAcct(email, name, role) { if (!email) return; setA([{ email, name, role }, ...getA().filter(a => a.email !== email)]); }
+function renderAccts() {
+  const a = getA(), b = $('#accts'); if (!b) return; b.hidden = !a.length;
+  b.innerHTML = a.length ? '<small>Saved accounts on this device</small>' + a.map(x => `<div class="ac"><button type="button" data-e="${esc(x.email)}"><span class="av2">${esc((x.name || '?')[0].toUpperCase())}</span><span><b>${esc(x.name || shown(x.email))}</b><small>${esc(shown(x.email))}${x.role === 'official' ? ' · Official' : ''}</small></span></button><button type="button" class="x" data-x="${esc(x.email)}" aria-label="Remove account">×</button></div>`).join('') : '';
+  const f = $('#authForm'); if (f) f.password.value = '';
+}
+function focusForm() { setTimeout(() => { const f = $('#authForm'); f && f.scrollIntoView({ block: 'start' }); if (localStorage.mt_sw) { localStorage.removeItem('mt_sw'); toast('Choose an account to continue'); } }, 80); }
+$('#accts').onclick = e => {
+  const x = e.target.closest('[data-x]'); if (x) { setA(getA().filter(a => a.email !== x.dataset.x)); return renderAccts(); }
+  const b = e.target.closest('[data-e]'); if (!b) return; setMode(false); const f = $('#authForm'); f.email.value = shown(b.dataset.e); f.password.focus();
+};
+$('#swacc').onclick = $('#tsw').onclick = () => { localStorage.mt_sw = '1'; $('#logout').click(); };
+document.addEventListener('click', e => { const g = e.target.closest('[data-go]'); g && $('#view').contains(g) && go(g.dataset.go); });
+document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-go]')) { e.preventDefault(); go(e.target.dataset.go); } });
+onAuthStateChanged(auth, u => { if (registering) return; u ? boot(u) : (me = null, unsub && unsub(), nUnsub && nUnsub(), uUnsub && uUnsub(), $('#app').hidden = true, $('#auth').hidden = false, renderAccts(), focusForm()); });
 
 async function boot(u) {
   const s = await getDoc(doc(db, 'users', u.uid));
   let d0 = s.exists() ? s.data() : null;
   if (!d0) { try { d0 = { name: (u.email || '').split('@')[0], purok: '', email: u.email || '', role: 'resident', verified: false, createdAt: serverTimestamp() }; await setDoc(doc(db, 'users', u.uid), d0); } catch (_) { toast('Profile not found'); return signOut(auth); } }
-  me = { uid: u.uid, ...d0 };
+  me = { uid: u.uid, ...d0 }; rememberAcct(me.email || u.email, me.name, me.role);
   $('#auth').hidden = true; $('#app').hidden = false;
   $('#whoName').textContent = me.name; setRole();
   const nav = me.role === 'official'
@@ -280,14 +297,14 @@ function profile(el) {
 async function dash(el) {
   const tk = dash.t = (dash.t || 0) + 1;
   el.innerHTML = '<h2>Dashboard</h2><div class="stats" id="st"></div>';
-  const defs = [['users','Residents'],['requests','Requests'],['complaints','Complaints'],['alerts','Alerts'],['households','Households']];
+  const defs = [['users','Residents','residents'],['requests','Requests','requests'],['complaints','Complaints','complaints'],['alerts','Alerts','alerts'],['households','Households','households']];
   const snaps = await Promise.all(defs.map(d => getDocs(collection(db, d[0]))));
   if (tk !== dash.t || !$('#st')) return;
-  $('#st').innerHTML = defs.map((d, i) => `<div class="stat" style="animation-delay:${i * 80}ms"><b data-n="${i === 0 ? snaps[0].docs.filter(d => d.data().role === 'resident').length : snaps[i].size}">0</b>${d[1]}</div>`).join('');
+  $('#st').innerHTML = defs.map((d, i) => `<div class="stat go" role="button" tabindex="0" data-go="${d[2]}" style="animation-delay:${i * 80}ms"><i class="chev">›</i><b data-n="${i === 0 ? snaps[0].docs.filter(d => d.data().role === 'resident').length : snaps[i].size}">0</b>${d[1]}</div>`).join('');
   const pk = {}; snaps[0].docs.map(d => d.data()).filter(u => u.role === 'resident').forEach(u => { const p = u.purok || 'No purok'; pk[p] = (pk[p] || 0) + 1; }); const mx = Math.max(1, ...Object.values(pk));
-  $('#view').insertAdjacentHTML('beforeend', '<h3 class="sec">Residents per purok</h3>' + Object.entries(pk).map(([p, n]) => `<div class="bar"><i style="width:${n * 100 / mx}%"></i><span>${esc(p)}: ${n}</span></div>`).join(''));
+  $('#view').insertAdjacentHTML('beforeend', '<h3 class="sec">Residents per purok</h3>' + Object.entries(pk).map(([p, n]) => `<div class="bar go" role="button" tabindex="0" data-go="residents"><i style="width:${n * 100 / mx}%"></i><span>${esc(p)}: ${n}</span></div>`).join(''));
   const pend = snaps[1].docs.filter(d => d.data().status === 'Pending').length, opn = snaps[2].docs.filter(d => d.data().status !== 'Resolved').length;
-  $('#st').insertAdjacentHTML('beforeend', [['⏳ Pending requests', pend], ['⚠️ Open complaints', opn]].map(x => `<div class="stat warn"><b data-n="${x[1]}">0</b>${x[0]}</div>`).join(''));
+  $('#st').insertAdjacentHTML('beforeend', [['⏳ Pending requests', pend, 'requests'], ['⚠️ Open complaints', opn, 'complaints']].map(x => `<div class="stat warn go" role="button" tabindex="0" data-go="${x[2]}"><i class="chev">›</i><b data-n="${x[1]}">0</b>${x[0]}</div>`).join(''));
   document.querySelectorAll('[data-n]').forEach(b => { const n = +b.dataset.n, t0 = performance.now(); (function f(t) { const p = Math.min(1, (t - t0) / 1100); b.textContent = Math.round(n * (1 - Math.pow(1 - p, 3))); p < 1 && requestAnimationFrame(f); })(t0); });
 }
 

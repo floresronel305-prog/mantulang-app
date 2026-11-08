@@ -65,3 +65,19 @@ html body .tabs{background:color-mix(in srgb,var(--ac) 8%,transparent)}
 @media(max-width:760px){.feat{grid-template-columns:1fr 1fr;gap:8px}.feat small{display:none}.hud{justify-content:center}.feat{margin-inline:auto}}
 html[data-view=phone] .feat small,html[data-view=phone] .trust{display:none}html[data-view=phone] .hud{justify-content:center}
 @media(prefers-reduced-motion:reduce){.pill i{animation:none}}
+
+/* ===== v15: clickable dashboard, switch account, compact phone login ===== */
+.go{cursor:pointer}
+.stat.go{position:relative}.stat .chev{position:absolute;right:14px;top:12px;font-style:normal;font-size:1.4rem;color:var(--ac);opacity:.45;transition:transform .25s,opacity .25s}
+.stat.go:hover .chev{transform:translateX(3px);opacity:1}
+.go:active{transform:scale(.98)}.go:focus-visible{outline:2px solid var(--ac);outline-offset:2px}.bar.go:hover{border-color:var(--ac)}
+.accts{display:grid;gap:8px;margin:0 0 18px}.accts>small{font:600 .64rem var(--fm);letter-spacing:1.6px;text-transform:uppercase;color:var(--mut)}
+.ac{display:flex;gap:6px}
+.ac>button:first-child{flex:1;min-width:0;display:flex;gap:12px;align-items:center;text-align:left;padding:10px 12px;border:1px solid var(--hair);border-radius:12px;background:var(--card);color:var(--ink);cursor:pointer;font:inherit;transition:border-color .2s,transform .2s}
+.ac>button:first-child:hover{border-color:var(--ac);transform:translateY(-1px)}
+.ac b{display:block;font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ac small{display:block;font:400 .74rem var(--fm);color:var(--mut);overflow:hidden;text-overflow:ellipsis}
+.av2{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex:none;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--green),var(--ac))}
+.ac .x{width:38px;border:1px solid var(--hair);border-radius:12px;background:none;color:var(--mut);cursor:pointer;font-size:1.2rem}.ac .x:hover{color:var(--red);border-color:var(--red)}
+.top .top-out:not(#tout):not(#tsw){order:7}#tsw{order:8;padding:7px 12px}#tout{order:9}.top>*{order:0}
+@media(max-width:760px){html body .feat,html body .trust,html body .hud{display:none}html body .auth-art{padding:calc(3vh + env(safe-area-inset-top,0px)) 8% 4vh}}
+html[data-view=phone] body .feat,html[data-view=phone] body .trust,html[data-view=phone] body .hud{display:none}
