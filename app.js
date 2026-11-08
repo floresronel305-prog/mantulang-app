@@ -10,7 +10,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const fmt = t => t?.toDate ? t.toDate().toLocaleString('en-PH', {dateStyle:'medium', timeStyle:'short'}) : '';
 document.documentElement.dataset.theme = localStorage.theme || 'light';
 $('#theme').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = localStorage.theme = t; };
-let me = null, nUnsub = null, uUnsub = null, unsub = null, registering = false, signup = false;
+let me = null, nUnsub = null, uUnsub = null, watchId = null, unsub = null, registering = false, signup = false;
 
 function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t.h); t.h = setTimeout(() => t.classList.remove('show'), 2600); }
 
@@ -24,6 +24,7 @@ $('#authSwap').onclick = e => {
 $('#authForm').onsubmit = async e => {
   e.preventDefault();
   const f = Object.fromEntries(new FormData(e.target));
+  if (!f.email.includes('@')) f.email = f.email.trim().toLowerCase() + '@mantulang.ph';
   try {
     if (signup) {
       if (!f.name) return toast('Enter your full name');
@@ -34,7 +35,7 @@ $('#authForm').onsubmit = async e => {
     } else await signInWithEmailAndPassword(auth, f.email, f.password);
   } catch (err) { registering = false; toast(err.code?.replace('auth/', '').replace(/-/g, ' ') || 'Something went wrong'); }
 };
-$('#logout').onclick = () => signOut(auth);
+$('#logout').onclick = () => { if (watchId != null) { navigator.geolocation.clearWatch(watchId); watchId = null; deleteDoc(doc(db, 'locations', me.uid)); } signOut(auth); };
 onAuthStateChanged(auth, u => { if (registering) return; u ? boot(u) : (me = null, unsub && unsub(), nUnsub && nUnsub(), uUnsub && uUnsub(), $('#app').hidden = true, $('#auth').hidden = false); });
 
 async function boot(u) {
@@ -44,8 +45,8 @@ async function boot(u) {
   $('#auth').hidden = true; $('#app').hidden = false;
   $('#whoName').textContent = me.name; setRole();
   const nav = me.role === 'official'
-    ? [['dash','Dashboard'],['announcements','Announcements'],['events','Events'],['lostfound','Lost & found'],['requests','Requests'],['complaints','Complaints'],['alerts','Emergency alerts'],['residents','Residents'],['households','Households'],['polls','Polls'],['officials','Directory'],['profile','My profile']]
-    : [['announcements','Announcements'],['events','Events'],['lostfound','Lost & found'],['requests','Certificates'],['complaints','Complaints'],['sos','Emergency'],['households','My household'],['polls','Polls'],['notes','Notifications'],['officials','Officials'],['profile','My profile']];
+    ? [['dash','Dashboard'],['announcements','Announcements'],['events','Events'],['lostfound','Lost & found'],['requests','Requests'],['complaints','Complaints'],['alerts','Emergency alerts'],['map','Live map'],['chat','Chats'],['residents','Residents'],['households','Households'],['polls','Polls'],['officials','Directory'],['profile','My profile']]
+    : [['announcements','Announcements'],['events','Events'],['lostfound','Lost & found'],['requests','Certificates'],['complaints','Complaints'],['sos','Emergency'],['map','Live map'],['chat','Chats'],['households','My household'],['polls','Polls'],['notes','Notifications'],['officials','Officials'],['profile','My profile']];
   $('#nav').innerHTML = nav.map(n => `<button data-v="${n[0]}">${n[1]}</button>`).join('');
   $('#nav').onclick = e => e.target.dataset.v && go(e.target.dataset.v);
   watchNotes(); go(nav[0][0]);
@@ -71,7 +72,7 @@ function live(col, mine, render) {
 function go(v) {
   document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
   const el = $('#view'); unsub && unsub(); el.innerHTML = '';
-  ({ dash, sos, alerts, residents, profile, polls, notes }[v] || (() => page(v, el)))(el);
+  ({ dash, sos, alerts, residents, profile, polls, notes, map: livemap, chat }[v] || (() => page(v, el)))(el);
 }
 
 function printCert(r) {
@@ -137,12 +138,12 @@ async function dash(el) {
 
 function sos(el) {
   el.innerHTML = '<h2>Emergency</h2><p class="muted">Press and hold is not required. One tap alerts the barangay officials with your name and purok.</p><button class="sos" id="sos">SOS</button>';
-  $('#sos').onclick = async () => { if (!confirm('Send an emergency alert to barangay officials?')) return; await addDoc(collection(db, 'alerts'), { uid: me.uid, name: me.name, purok: me.purok || '', createdAt: serverTimestamp() }); toast('Alert sent. Help is being notified.'); };
+  $('#sos').onclick = async () => { if (!confirm('Send an emergency alert to barangay officials?')) return; const pos = await new Promise(r => navigator.geolocation ? navigator.geolocation.getCurrentPosition(p => r(p.coords), () => r(null), { timeout: 6000 }) : r(null)); await addDoc(collection(db, 'alerts'), { uid: me.uid, name: me.name, purok: me.purok || '', lat: pos ? pos.latitude : null, lng: pos ? pos.longitude : null, createdAt: serverTimestamp() }); toast('Alert sent. Help is being notified.'); };
 }
 
 function alerts(el) {
   el.innerHTML = '<h2>Emergency alerts</h2><div id="list"></div>';
-  live('alerts', false, rows => $('#list').innerHTML = rows.length ? rows.map(r => `<div class="card"><div class="row"><h3>${esc(r.name)}</h3><span class="badge Rejected">SOS</span></div><p>Purok: ${esc(r.purok) || 'n/a'}</p><div class="muted">${fmt(r.createdAt)}</div></div>`).join('') : '<div class="empty">No alerts.</div>');
+  live('alerts', false, rows => $('#list').innerHTML = rows.length ? rows.map(r => `<div class="card"><div class="row"><h3>${esc(r.name)}</h3><span class="badge Rejected">SOS</span></div><p>Purok: ${esc(r.purok) || 'n/a'}</p>${r.lat ? `<p><a href="https://maps.google.com/?q=${r.lat},${r.lng}" target="_blank" rel="noopener">Open location in map</a></p>` : ''}<div class="muted">${fmt(r.createdAt)}</div></div>`).join('') : '<div class="empty">No alerts.</div>');
 }
 
 function residents(el) {
@@ -219,3 +220,57 @@ function notes(el) {
 }
 
 function setRole() { $('#whoRole').textContent = me.role === 'official' ? 'Barangay Official' : 'Resident · ' + (me.verified ? 'Verified' : 'Not yet verified'); }
+
+/* ---------- Live map (GPS) ---------- */
+function livemap(el) {
+  const off = me.role === 'official';
+  el.innerHTML = `<h2>Live map</h2><div class="card row"><span class="muted">${off ? 'Residents who share their location appear here.' : 'Share your live location with barangay officials. Only officials can see it.'}</span><button class="btn sm" id="gt">${watchId != null ? 'Stop sharing' : 'Share my location'}</button></div><div id="map"></div>`;
+  const m = L.map('map').setView([11.1086, 122.6431], 14), mk = {}; let fitted = false;
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(m);
+  const upd = (id, d) => {
+    if (!d) { if (mk[id]) { m.removeLayer(mk[id]); delete mk[id]; } return; }
+    const p = [d.lat, d.lng];
+    if (mk[id]) mk[id].setLatLng(p); else mk[id] = L.marker(p).addTo(m).bindPopup(`<b>${esc(d.name)}</b><br>${esc(d.purok || '')}`);
+    if (!fitted) { m.setView(p, 16); fitted = true; }
+  };
+  unsub = off ? onSnapshot(collection(db, 'locations'), s => s.docChanges().forEach(c => upd(c.doc.id, c.type === 'removed' ? null : c.doc.data())))
+              : onSnapshot(doc(db, 'locations', me.uid), s => upd(me.uid, s.exists() ? s.data() : null));
+  $('#gt').onclick = () => {
+    if (watchId != null) { navigator.geolocation.clearWatch(watchId); watchId = null; deleteDoc(doc(db, 'locations', me.uid)); $('#gt').textContent = 'Share my location'; return toast('Location sharing stopped'); }
+    if (!navigator.geolocation) return toast('GPS is not supported on this device');
+    watchId = navigator.geolocation.watchPosition(p => setDoc(doc(db, 'locations', me.uid), { lat: p.coords.latitude, lng: p.coords.longitude, name: me.name, purok: me.purok || '', updatedAt: serverTimestamp() }), () => toast('Allow location access in your browser'), { enableHighAccuracy: true, maximumAge: 5000 });
+    $('#gt').textContent = 'Stop sharing'; toast('Sharing your live location');
+  };
+}
+
+/* ---------- Chats ---------- */
+function chat(el) {
+  const off = me.role === 'official';
+  el.innerHTML = `<h2>Chats</h2><div class="card"><select id="rm" style="margin:0"><option value="general">Barangay group chat</option>${off ? '' : `<option value="help_${me.uid}">Message the officials</option>`}</select></div><div class="chat" id="msgs"></div><form class="chatform" id="cf"><input id="ct" placeholder="Type a message" autocomplete="off"><button class="btn">Send</button></form>`;
+  let room = 'general';
+  if (off) getDocs(collection(db, 'users')).then(s => s.docs.filter(d => d.data().role === 'resident').forEach(d => $('#rm').add(new Option('Help desk: ' + d.data().name, 'help_' + d.id))));
+  const open = () => {
+    unsub && unsub();
+    unsub = onSnapshot(query(collection(db, 'messages'), where('room', '==', room)), s => {
+      const rows = s.docs.map(d => d.data()).sort((a, b) => (a.createdAt?.seconds || 9e9) - (b.createdAt?.seconds || 9e9)).slice(-100);
+      $('#msgs').innerHTML = rows.length ? rows.map(r => `<div class="msg ${r.uid === me.uid ? 'me' : ''}"><b>${esc(r.name)}${r.role === 'official' ? ' · Official' : ''}</b><span>${esc(r.text)}</span><i>${fmt(r.createdAt)}</i></div>`).join('') : '<div class="empty">No messages yet. Say hello.</div>';
+      $('#msgs').scrollTop = 1e9;
+    }, () => toast('Cannot load chat. Check Firestore rules.'));
+  };
+  $('#rm').onchange = e => { room = e.target.value; open(); };
+  open();
+  $('#cf').onsubmit = async e => {
+    e.preventDefault(); const t = $('#ct').value.trim(); if (!t) return; $('#ct').value = '';
+    await addDoc(collection(db, 'messages'), { room, text: t, uid: me.uid, name: me.name, role: me.role, createdAt: serverTimestamp() });
+  };
+}
+
+/* ---------- Install app (PWA) ---------- */
+let installEvt = null;
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; });
+const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+document.querySelectorAll('.install').forEach(b => {
+  b.hidden = standalone;
+  b.onclick = async () => { if (installEvt) { installEvt.prompt(); installEvt = null; } else toast('Browser menu (three dots or Share) > Add to Home screen / Install app'); };
+});
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');

@@ -1,12 +1,9 @@
-BARANGAY MANTULANG APP - kumpletong files sa isang folder (walang subfolder)
+BARANGAY MANTULANG APP - ULTRA (isang folder, walang subfolder)
+I-upload LAHAT ng files sa root ng GitHub repo; palitan ang may parehong pangalan.
 
-index.html          = pahina ng app
-style.css           = design at animations
-app.js              = lahat ng features (login, requests, polls, atbp.)
-firebase-config.js  = Firebase config mo
-firestore.rules     = i-paste sa Firebase > Firestore > Rules > Publish
-storage.rules       = para sa Storage (hindi pa kailangan; bayad na plan)
+ADMIN: username = admin   password = Admin@Mantulang2026   (palitan mo mamaya)
+1) Sa app: Create a resident account > Full name: Barangay Captain, Username: admin, Password sa itaas.
+2) Firebase > Firestore > Data > users > (admin user) > role: resident -> official.
+3) I-refresh ang app.
 
-GitHub: i-upload LAHAT ng files na ito sa iisang lugar (root ng repo).
-Render: Static Site, Build Command blangko, Publish Directory = .
-Firebase > Authentication > Settings > Authorized domains: idagdag ang Render link.
+Firestore rules: i-publish ulit ang firestore.rules (may bagong locations at messages).

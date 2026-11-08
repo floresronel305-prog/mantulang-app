@@ -6,6 +6,9 @@
 <title>Barangay Mantulang, Passi City</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1f5e3b"><link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -17,9 +20,10 @@
       <input name="name" placeholder="Full name">
       <input name="purok" placeholder="Purok / Sitio">
     </div>
-    <input name="email" type="email" placeholder="Email" required>
+    <input name="email" type="text" placeholder="Username or email" required autocapitalize="none">
     <input name="password" type="password" placeholder="Password (6+ characters)" minlength="6" required>
     <button class="btn" id="authBtn">Sign in</button>
+    <button type="button" class="btn gold install" hidden>Install app</button>
     <p class="muted"><a href="#" id="authSwap">Create a resident account</a></p>
   </form>
 </section>
@@ -28,7 +32,7 @@
   <aside class="side">
     <div class="brand">Mantulang</div>
     <nav id="nav"></nav>
-    <div class="who"><b id="whoName"></b><span id="whoRole"></span><button class="link" id="theme">Dark / light</button><button class="link" id="logout">Sign out</button></div>
+    <div class="who"><b id="whoName"></b><span id="whoRole"></span><button class="link install" hidden>Install app</button><button class="link" id="theme">Dark / light</button><button class="link" id="logout">Sign out</button></div>
   </aside>
   <main id="view" class="view"></main>
 </div>

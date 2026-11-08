@@ -60,3 +60,32 @@ textarea{min-height:90px;resize:vertical}
 .bar{position:relative;background:#e6ece7;border-radius:8px;height:36px;margin:6px 0;overflow:hidden;color:#17231c}
 .bar i{position:absolute;inset:0 auto 0 0;background:var(--gold);transition:width .8s cubic-bezier(.2,.8,.2,1)}
 .bar span{position:relative;line-height:36px;padding:0 12px;font-size:.9rem;font-weight:600}
+
+/* ---- ultra look ---- */
+body{background:var(--bg);overflow-x:hidden}
+body::before,body::after{content:"";position:fixed;z-index:-1;width:55vmax;height:55vmax;border-radius:50%;filter:blur(90px);opacity:.4;animation:drift 18s ease-in-out infinite alternate}
+body::before{background:#2f8a57;top:-22vmax;left:-16vmax}
+body::after{background:#e8b23a;bottom:-26vmax;right:-16vmax;animation-delay:-9s}
+@keyframes drift{to{transform:translate(12vmax,8vmax) scale(1.2)}}
+.card,.stat{background:color-mix(in srgb,var(--card) 80%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid #ffffff59;transition:transform .25s,box-shadow .25s}
+.card:hover,.stat:hover{transform:translateY(-3px);box-shadow:0 14px 34px #0a2a1430}
+.side{background:linear-gradient(185deg,#16502f,#0a2517)}
+.brand{font-size:1.6rem;letter-spacing:-.5px;background:linear-gradient(90deg,#fff,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+.btn{background:linear-gradient(135deg,var(--green),var(--green2));box-shadow:0 6px 16px #1f5e3b44}
+.btn.gold{background:linear-gradient(135deg,#f4c95d,var(--gold));color:#2b2000;box-shadow:0 6px 16px #e8b23a55}
+.btn.red{background:linear-gradient(135deg,#e24b40,var(--red))}
+.auth-art{position:relative;overflow:hidden}
+.auth-art::before{content:"";position:absolute;width:60vmin;height:60vmin;right:-18vmin;bottom:-18vmin;border:2px dashed #ffffff44;border-radius:50%;animation:spin 40s linear infinite}
+.auth-art::after{content:"";position:absolute;width:28vmin;height:28vmin;left:8%;bottom:8%;border-radius:50%;background:radial-gradient(circle,#e8b23a99,transparent 70%);animation:float 7s ease-in-out infinite alternate}
+@keyframes spin{to{transform:rotate(360deg)}}@keyframes float{to{transform:translateY(-30px) scale(1.15)}}
+.auth-box{background:color-mix(in srgb,var(--card) 75%,transparent);backdrop-filter:blur(16px);padding:30px;border-radius:20px;border:1px solid #ffffff66;box-shadow:0 20px 50px #0a2a1426;margin:20px}
+.auth-box .install{width:100%;margin-bottom:10px}
+.install{background:var(--gold);color:#2b2000}
+.view h2{background:linear-gradient(90deg,var(--green),var(--green2));-webkit-background-clip:text;background-clip:text;color:transparent}
+#map{height:62vh;border-radius:var(--r);overflow:hidden;box-shadow:0 10px 30px #0a2a1426;z-index:0}
+.chat{height:50vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:var(--r);background:color-mix(in srgb,var(--card) 70%,transparent);margin-bottom:10px}
+.msg{max-width:78%;background:var(--card);padding:8px 12px;border-radius:14px 14px 14px 4px;display:flex;flex-direction:column;animation:rise .3s both;box-shadow:0 1px 3px #0a2a1418}
+.msg.me{align-self:flex-end;background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;border-radius:14px 14px 4px 14px}
+.msg b{font-size:.78rem;opacity:.8}.msg i{font-size:.7rem;opacity:.6;align-self:flex-end}
+.chatform{display:flex;gap:8px}.chatform input{margin:0}
+[data-theme=dark] .card,[data-theme=dark] .stat,[data-theme=dark] .auth-box{border-color:#ffffff1a}

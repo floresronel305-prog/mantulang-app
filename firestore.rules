@@ -20,6 +20,14 @@ service cloud.firestore {
       allow update: if signedIn() && resource.data.to == request.auth.uid && request.resource.data.to == resource.data.to;
       allow create: if isOfficial();
     }
+    match /locations/{id} {
+      allow read: if signedIn() && (isOfficial() || id == request.auth.uid);
+      allow create, update, delete: if signedIn() && id == request.auth.uid;
+    }
+    match /messages/{id} {
+      allow read: if signedIn() && (resource.data.room == 'general' || resource.data.room == 'help_' + request.auth.uid || isOfficial());
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid && (request.resource.data.room == 'general' || request.resource.data.room == 'help_' + request.auth.uid || isOfficial());
+    }
     match /{col}/{id} {
       allow read: if signedIn() && (col in ['announcements','events','officials','polls','lostfound'] || isOfficial() || resource.data.uid == request.auth.uid);
       allow write: if isOfficial() && (col in ['announcements','events','officials','polls','lostfound']);
