@@ -1,0 +1,45 @@
+CCTV SETUP, BARANGAY MANTULANG APP v5
+=====================================
+
+WHAT THE APP CAN SHOW
+A web browser cannot play RTSP (rtsp://) directly, which is what most IP cameras, DVRs and NVRs speak.
+So the app plays links that browsers understand:
+  1. HLS  (.m3u8)       best choice for live video
+  2. MJPEG stream       simple, works with many cheap cameras
+  3. Snapshot image     a JPEG link that the app re-loads every few seconds (lowest bandwidth)
+  4. Embed              YouTube Live or any web player page
+  5. Video link         mp4 / webm
+All links MUST start with https:// (the app is https, so browsers block http links).
+
+EASIEST WAY TO CONNECT A NORMAL IP CAMERA / NVR (free software)
+  1. Put a small always-on computer (old PC, mini PC, Raspberry Pi) at the barangay hall, on the same network as the cameras.
+  2. Install go2rtc (or MediaMTX). Give it each camera's RTSP address. It turns RTSP into HLS.
+       go2rtc HLS link:     http://<computer>:1984/api/stream.m3u8?src=<camera-name>
+       MediaMTX HLS link:   http://<computer>:8888/<camera-name>/index.m3u8
+  3. Make it reachable over https. Free option: Cloudflare Tunnel (cloudflared). It gives you an https address
+     that points to that computer, without opening router ports. A tunnel on your own domain gives a permanent link.
+  4. Allow your website to read the stream (CORS):
+       go2rtc:    in go2rtc.yaml:   api: { origin: "*" }
+       MediaMTX:  in mediamtx.yml:  hlsAllowOrigin: '*'    (better: put your site URL, no trailing slash)
+  5. In the app: CCTV > Add camera > type "Live stream (HLS)" > paste the https link > Save.
+
+SIMPLEST TEST (no computer needed)
+  - Choose "Embed" and paste a YouTube Live link, or choose "Snapshot" and paste a camera's JPEG snapshot https link.
+  - NOTE: an "unlisted" YouTube link is NOT private. Use it only for cameras you are happy to make public.
+
+SECURITY RULES OF THUMB
+  - NEVER put the camera username/password in the link. The app refuses links that contain them.
+  - Links are stored in Firestore. Officials can read every link; residents only read cameras marked Public.
+    So treat every link as a secret among officials. Use hard-to-guess camera names on the gateway.
+  - Never port-forward a camera or DVR straight to the internet. Change all default camera passwords.
+  - Keep "Officials only" as the default. Use "Public" only for open areas (plaza, road, flood marker).
+  - Every official view and snapshot is written to the Access log (CCTV > Access log). Keep officials to a minimum.
+  - "Monitor mode" keeps the screen awake and disables auto sign-out. Use it only on a locked-down office device.
+
+PRIVACY AND LEGAL (RA 10173)
+  - Get written approval from the Punong Barangay and name who may watch and for what purpose.
+  - Put visible CCTV signs where cameras are. Cover public areas only, never private homes, toilets or inside offices.
+  - Decide how long recordings are kept and who may export them. Follow the National Privacy Commission's CCTV guidance.
+  - This app shows LIVE views and saves snapshots on the device that clicked "snapshot". It does not record video.
+    For recording, use your NVR or go2rtc/MediaMTX recording on the barangay hall computer.
+  - A camera view is not a guarantee that someone is watching. Always publish 911 and hotline numbers.

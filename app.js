@@ -1,9 +1,10 @@
 import { AI_URL } from "./ai-config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, query, where, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { firebaseConfig } from "./firebase-config.js";
+import { initCCTV } from "./cctv.js";
 
 const app = initializeApp(firebaseConfig), auth = getAuth(app), db = (() => { try { return initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); } catch (_) { return getFirestore(app); } })(), store = getStorage(app);
 const $ = s => document.querySelector(s);
@@ -72,7 +73,7 @@ document.addEventListener('click', e => { const g = e.target.closest('[data-go]'
 document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-go]')) { e.preventDefault(); go(e.target.dataset.go); } });
 /* ---- Mantulang Assistant: answers come from the app's own service guide (DESC/NAME) ---- */
 const aiHist = [];
-const KW = { requests:'certificate clearance indigency residency business permit sertipiko papel request requests status', complaints:'complaint reklamo blotter away gulo', events:'event activity kaganapan okasyon', lostfound:'lost found nawala nakita wallet cellphone', programs:'program serbisyo benepisyo', jobs:'job trabaho hanapbuhay employment', ordinances:'ordinance resolution batas ordinansa', budget:'budget pondo gastos proyekto transparency pera', evac:'evacuation evacuate bagyo baha typhoon flood center', health:'health vaccine bakuna kalusugan clinic', garbage:'garbage basura waste koleksyon trash', relief:'relief ayuda goods pagkain', reports:'report sira ilaw kalsada drainage streetlight problema', idapps:'barangay id apply', appointments:'appointment schedule mediation konsulta', suggestions:'suggestion mungkahi opinion', registry:'senior pwd solo parent 4ps registry', volunteers:'volunteer boluntaryo tumulong', polls:'poll survey boto vote', households:'household pamilya sambahayan', map:'map mapa location lokasyon', officials:'official kapitan kagawad directory contact numero opisyal', hotlines:'hotline hotlines 911 numero tawag', myid:'digital qr', gobag:'gobag go-bag bag checklist', settings:'settings theme dark kulay font', profile:'profile account pangalan purok mobile', chat:'chat message mensahe', notes:'notification abiso', announcements:'announcement anunsyo balita advisory', residents:'resident residente verify beripika', broadcast:'broadcast announce lahat', backup:'backup download data', alerts:'alert alerts', dash:'dashboard statistics bilang' };
+const KW = { requests:'certificate clearance indigency residency business permit sertipiko papel request requests status', complaints:'complaint reklamo blotter away gulo', events:'event activity kaganapan okasyon', lostfound:'lost found nawala nakita wallet cellphone', programs:'program serbisyo benepisyo', jobs:'job trabaho hanapbuhay employment', ordinances:'ordinance resolution batas ordinansa', budget:'budget pondo gastos proyekto transparency pera', evac:'evacuation evacuate bagyo baha typhoon flood center', health:'health vaccine bakuna kalusugan clinic', garbage:'garbage basura waste koleksyon trash', relief:'relief ayuda goods pagkain', reports:'report sira ilaw kalsada drainage streetlight problema', idapps:'barangay id apply', appointments:'appointment schedule mediation konsulta', suggestions:'suggestion mungkahi opinion', registry:'senior pwd solo parent 4ps registry', volunteers:'volunteer boluntaryo tumulong', polls:'poll survey boto vote', households:'household pamilya sambahayan', map:'map mapa location lokasyon', officials:'official kapitan kagawad directory contact numero opisyal', hotlines:'hotline hotlines 911 numero tawag', myid:'digital qr', gobag:'gobag go-bag bag checklist', settings:'settings theme dark kulay font', profile:'profile account pangalan purok mobile', chat:'chat message mensahe', notes:'notification abiso', announcements:'announcement anunsyo balita advisory', residents:'resident residente verify beripika', broadcast:'broadcast announce lahat', backup:'backup download data', alerts:'alert alerts', dash:'dashboard statistics bilang', cctv:'cctv camera kamera surveillance bantay monitor' };
 const LBL = { requests:'Certificates', sos:'Emergency (SOS)', chat:'Chats', notes:'Notifications', announcements:'Announcements', alerts:'Emergency alerts', dash:'Dashboard', more:'All services' };
 const lbl = k => NAME[k] || FORMS[k]?.title || LBL[k] || k;
 const STOP = new Set(['ang', 'mga', 'ako', 'paano', 'how', 'the', 'and', 'for', 'you', 'can', 'mag', 'ano', 'saan', 'may', 'gusto', 'nais', 'pwede', 'pano', 'kung', 'yung', 'ito', 'what', 'where', 'are', 'nang', 'ba', 'po']);
@@ -84,6 +85,7 @@ function aiMsg(t, who, keys) {
 }
 const AI_PUB = ['announcements', 'events', 'officials', 'programs', 'jobs', 'ordinances', 'budget', 'evac', 'health', 'garbage', 'relief', 'lostfound', 'polls'], AI_OWN = ['requests', 'complaints', 'reports', 'idapps', 'appointments'];
 const AI_KB = [
+  [/(cctv|camera|kamera)/, 'Sa CCTV makikita ang mga camera ng barangay. Ang mga camera na ginawang Public lamang ang makikita ng residente; ang iba ay para sa mga opisyal. Hindi garantiya na may nakatingin sa camera sa lahat ng oras, kaya sa emergency tumawag sa 911 at gamitin ang SOS.', ['cctv']],
   [/(install|i-install|home screen|add to home)/, 'Para i-install ang app: pindutin ang "Install app" kung lumabas ito, o sa browser menu (⋮) piliin ang "Add to Home screen". Parang ordinaryong app na ito pagkatapos.', ['settings']],
   [/(offline|walang internet|walang signal|no internet)/, 'Gumagana nang bahagya ang app kahit offline: makikita ang mga na-save na datos at may lalabas na "Offline" bar sa taas. Kailangan pa rin ng internet para magpadala ng request, reklamo o SOS.', []],
   [/(notification|push|abiso|bell)/, 'Makikita ang mga abiso sa Notifications (hal. kapag na-approve ang request mo). Wala pang push notification kapag nakasara ang app, kaya buksan ito paminsan-minsan.', ['notes']],
@@ -156,7 +158,7 @@ async function boot(u) {
   $('#auth').hidden = true; $('#app').hidden = false;
   $('#whoName').textContent = me.name; setRole();
   const nav = me.role === 'official'
-    ? [['dash','Dashboard'],['announcements','Announcements'],['requests','Requests'],['complaints','Complaints'],['alerts','Emergency alerts'],['map','Live map'],['chat','Chats'],['more','All services']]
+    ? [['dash','Dashboard'],['announcements','Announcements'],['requests','Requests'],['complaints','Complaints'],['alerts','Emergency alerts'],['map','Live map'],['cctv','CCTV'],['chat','Chats'],['more','All services']]
     : [['home','Home'],['announcements','Announcements'],['requests','Certificates'],['sos','Emergency'],['chat','Chats'],['notes','Notifications'],['more','All services']];
   $('#nav').innerHTML = nav.map(n => `<button data-v="${n[0]}"><em>${IC[n[0]] || '•'}</em><span>${n[1]}</span></button>`).join('');
   $('#nav').onclick = e => { const b = e.target.closest('button'); b && go(b.dataset.v); };
@@ -165,7 +167,7 @@ async function boot(u) {
 }
 
 /* ---------- Views ---------- */
-const IC = {about:'ℹ️',more:'🧩',programs:'🎯',jobs:'💼',ordinances:'⚖️',budget:'💰',evac:'🏫',health:'💉',garbage:'🗑️',relief:'📦',reports:'🛠️',idapps:'🪪',appointments:'🗓️',suggestions:'💡',registry:'♿',volunteers:'🙋',myid:'🆔',broadcast:'📣',backup:'💾',gobag:'🎒',settings:'⚙️',home:'🏠',dash:'📊',announcements:'📢',events:'📅',lostfound:'🔎',requests:'📄',complaints:'📝',alerts:'🚨',sos:'🆘',map:'🗺️',chat:'💬',residents:'👥',households:'🏘️',polls:'🗳️',notes:'🔔',officials:'🏛️',hotlines:'☎️',profile:'👤'};
+const IC = {cctv:'📹',about:'ℹ️',more:'🧩',programs:'🎯',jobs:'💼',ordinances:'⚖️',budget:'💰',evac:'🏫',health:'💉',garbage:'🗑️',relief:'📦',reports:'🛠️',idapps:'🪪',appointments:'🗓️',suggestions:'💡',registry:'♿',volunteers:'🙋',myid:'🆔',broadcast:'📣',backup:'💾',gobag:'🎒',settings:'⚙️',home:'🏠',dash:'📊',announcements:'📢',events:'📅',lostfound:'🔎',requests:'📄',complaints:'📝',alerts:'🚨',sos:'🆘',map:'🗺️',chat:'💬',residents:'👥',households:'🏘️',polls:'🗳️',notes:'🔔',officials:'🏛️',hotlines:'☎️',profile:'👤'};
 const FORMS = {
   lostfound: { title:'Lost & found', post:'any', fields:'<select name="kind"><option>Lost</option><option>Found</option></select><input name="title" placeholder="Item (e.g. black wallet)" required><textarea name="body" placeholder="Where and when, and how to contact you" required></textarea>', btn:'Post item', head:r=>r.kind + ': ' + r.title, text:r=>r.body },
   households: { title:'Household records', post:'resident', private:true, fields:'<input name="title" placeholder="Household head" required><input name="members" type="number" min="1" placeholder="Number of members" required><textarea name="body" placeholder="Member names and ages, notes (PWD, senior, 4Ps)"></textarea>', btn:'Save household', head:r=>r.title, text:r=>r.members + ' members. ' + (r.body || ''), cols:[['Date',r=>fmt(r.createdAt)],['Head',r=>r.title],['Purok',r=>r.purok],['Members',r=>r.members],['Notes',r=>r.body]] },
@@ -193,8 +195,9 @@ Object.assign(FORMS, {
   registry: { title:'Senior / PWD registry', post:'resident', private:true, cols:[['Name',r=>r.name],['Purok',r=>r.purok],['Type',r=>r.title],['Notes',r=>r.body]], fields:'<select name="title"><option>Senior citizen</option><option>PWD</option><option>Solo parent</option><option>4Ps</option></select>'+T('Name of person and details',''), btn:'Register', head:r=>r.title, text:r=>r.body || '' },
   volunteers: { title:'Volunteer sign-up', post:'resident', private:true, fields:I('title','What can you help with?')+T('Skills and availability',''), btn:'Sign up', head:r=>r.title, text:r=>r.body || '' }
 });
-const MORE = [['events'],['lostfound'],['complaints'],['programs'],['jobs'],['ordinances'],['budget'],['evac'],['health'],['garbage'],['relief'],['reports'],['idapps'],['appointments'],['suggestions'],['registry'],['volunteers'],['polls'],['households'],['map'],['officials'],['hotlines'],['myid'],['gobag'],['residents'],['broadcast'],['backup'],['settings'],['about'],['profile']], OFFONLY = ['residents','broadcast','backup'];
-const NAME = { about:'About this app', myid:'Digital ID', gobag:'Go-bag', settings:'Settings', broadcast:'Broadcast', backup:'Backup', residents:'Residents', map:'Live map', officials:'Directory', hotlines:'Hotlines', profile:'My profile', polls:'Polls' };
+const MORE = [['events'],['lostfound'],['complaints'],['programs'],['jobs'],['ordinances'],['budget'],['evac'],['health'],['garbage'],['relief'],['reports'],['idapps'],['appointments'],['suggestions'],['registry'],['volunteers'],['polls'],['households'],['map'],['cctv'],['officials'],['hotlines'],['myid'],['gobag'],['residents'],['broadcast'],['backup'],['settings'],['about'],['profile']], OFFONLY = ['residents','broadcast','backup'];
+const NAME = { about:'About this app', myid:'Digital ID', gobag:'Go-bag', settings:'Settings', broadcast:'Broadcast', backup:'Backup', residents:'Residents', map:'Live map', officials:'Directory', hotlines:'Hotlines', profile:'My profile', polls:'Polls', cctv:'CCTV' };
+const cctv = initCCTV({ db, F: { collection, addDoc, doc, updateDoc, deleteDoc, query, where, orderBy, limit, onSnapshot, getDocs, serverTimestamp }, $, esc, fmt, toast, ask, go, me: () => me, setCleanup: f => { unsub = f; } });
 const DESC = {
   announcements:['Official notices from the barangay: schedules, advisories and programs.','Check this page regularly. Officials publish; residents read.','Publish notices to all residents. Keep titles short and put the date or venue in the message.'],
   requests:['Request barangay certificates: Clearance, Indigency, Residency and Business Permit.','Your account must be verified first. Choose the certificate, state the purpose and send. You are notified when it is Approved. Bring a valid ID when claiming. Fees and processing time follow barangay policy.','Review each request and set its status (Pending, Approved, Rejected, Released). Residents are notified automatically. Print the certificate once approved.'],
@@ -218,6 +221,7 @@ const DESC = {
   households:['Household records for the barangay database.','Enter the household head, number of members and notes (senior, PWD, 4Ps). Entries are private to you and officials.','Review household data. Print or export for planning. Keep it confidential.'],
   polls:['Polls and surveys on barangay matters.','Choose one option. You can vote once per poll.','Publish questions with comma-separated options and review results.'],
   map:['Live map of residents who choose to share their location.','Tap Share my location to let officials see where you are. Tap Stop sharing anytime.','See residents who are sharing their location, for example during emergencies.'],
+  cctv:['Live CCTV cameras of the barangay.','Residents can watch only the cameras that officials mark Public (for example plaza, road or flood-marker cameras). A camera may go offline, and nobody is guaranteed to be watching, so in an emergency call 911 and use SOS.','Add cameras (HLS, MJPEG, snapshot or embed links), choose Officials only or Public, and watch them on a single, 2×2 or 3×3 wall. Every official view and snapshot is written to the Access log. Cover public areas only and follow RA 10173.'],
   officials:['Directory of barangay officials and their contact numbers.','Use it to reach the right official.','Add or edit officials and their contact numbers.'],
   hotlines:['Emergency hotline numbers.','Tap a number to call. For life-threatening emergencies call 911 first.'],
   myid:['Your digital barangay ID with a QR code.','Show it at the barangay hall. A Verified badge appears after officials verify your account.'],
@@ -256,7 +260,7 @@ function broadcast(el) {
 function backup(el) {
   el.innerHTML = '<h2>Backup</h2><div class="card"><p>Download all barangay data as one JSON file.</p><button class="btn" id="bk">Download backup</button></div>';
   $('#bk').onclick = async () => {
-    const o = {}; for (const c of ['users','announcements','events','officials','polls','votes','lostfound','requests','complaints','alerts','households',...Object.keys(FORMS)]) { if (o[c]) continue; try { o[c] = (await getDocs(collection(db, c))).docs.map(d => ({ id: d.id, ...d.data() })); } catch (_) {} }
+    const o = {}; for (const c of ['users','announcements','events','officials','polls','votes','lostfound','requests','complaints','alerts','households','cameras',...Object.keys(FORMS)]) { if (o[c]) continue; try { o[c] = (await getDocs(collection(db, c))).docs.map(d => ({ id: d.id, ...d.data() })); } catch (_) {} }
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(o)], { type: 'application/json' })); a.download = 'mantulang-backup-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); toast('Backup downloaded');
   };
 }
@@ -282,9 +286,9 @@ function settings(el) {
   draw();
 }
 function about(el) {
-  el.innerHTML = `<div class="hero"><small>About this app</small><h1>Barangay Mantulang</h1><p>Version 4.0 · Futuristic edition · Passi City, Iloilo</p></div>
+  el.innerHTML = `<div class="hero"><small>About this app</small><h1>Barangay Mantulang</h1><p>Version 5.0 · Command Center edition · Passi City, Iloilo</p></div>
   <div class="card"><h3>What is this app?</h3><p>A community app that brings barangay services to residents' phones: announcements, certificate requests, complaints, emergency alerts, a live map, chat and more. Officials manage everything from one dashboard.</p></div>
-  <div class="card"><h3>Key features</h3><p>Certificates and Barangay ID · Complaints and blotter · SOS alerts · Live map · Chats and polls · Programs, jobs, ordinances and budget transparency · Digital ID · Installable and offline-ready.</p></div>
+  <div class="card"><h3>Key features</h3><p>Certificates and Barangay ID · Complaints and blotter · SOS alerts · Live map and CCTV · Chats and polls · Programs, jobs, ordinances and budget transparency · Digital ID · Installable and offline-ready.</p></div>
   <div class="card"><h3>Privacy Notice (RA 10173)</h3><p>Barangay Mantulang collects your name, purok and contact details, and, only if you submit them, household, senior/PWD records, requests and live location. These are used only for barangay services and are visible only to you and authorized officials. Data is not sold or shared outside the barangay unless required by law. You may ask to view, correct or delete your data at the barangay hall. <i>Ang iyong datos ay gagamitin lamang sa serbisyo ng barangay.</i></p></div>
   <div class="card dev"><span class="av">RF</span><div><small>DEVELOPER</small><h3>Ronel Sigaya Flores</h3><p>First Year College · BSIT<br>PHINMA University of Iloilo</p></div></div>
   <p class="muted" style="text-align:center">Built with Firebase, Leaflet and OpenStreetMap.</p>`;
@@ -308,7 +312,7 @@ function live(col, mine, render) {
 function go(v) {
   document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v || (b.dataset.v === 'more' && !document.querySelector('#nav [data-v="' + v + '"]'))));
   const el = $('#view'); unsub && unsub(); el.innerHTML = ''; animUntil = performance.now() + 900; el.classList.remove('vin'); void el.offsetWidth; el.classList.add('vin'); scrollTo({ top: 0, behavior: 'smooth' });
-  ({ about, more, myid, broadcast, backup, gobag, settings, home, hotlines, dash, sos, alerts, residents, profile, polls, notes, map: livemap, chat }[v] || (() => page(v, el)))(el);
+  ({ about, more, myid, broadcast, backup, gobag, settings, home, hotlines, dash, sos, alerts, residents, profile, polls, notes, map: livemap, cctv: cctv.view, chat }[v] || (() => page(v, el)))(el);
   document.querySelectorAll('#nav button').forEach(b => b.classList.contains('on') ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
   const L0 = el.querySelector('#list'); if (L0 && !L0.innerHTML) L0.innerHTML = '<div class="skl"></div>'.repeat(3);
   if (v !== 'more' && v !== 'home' && v !== 'about') { const h = el.querySelector('h2'); h && h.insertAdjacentHTML('afterend', infoOf(v)); }
@@ -374,8 +378,8 @@ function profile(el) {
 async function dash(el) {
   const tk = dash.t = (dash.t || 0) + 1;
   el.innerHTML = '<h2>Dashboard</h2><div class="stats" id="st"></div>';
-  const defs = [['users','Residents','residents'],['requests','Requests','requests'],['complaints','Complaints','complaints'],['alerts','Alerts','alerts'],['households','Households','households']];
-  const snaps = await Promise.all(defs.map(d => getDocs(collection(db, d[0]))));
+  const defs = [['users','Residents','residents'],['requests','Requests','requests'],['complaints','Complaints','complaints'],['alerts','Alerts','alerts'],['households','Households','households'],['cameras','Cameras','cctv']];
+  const snaps = await Promise.all(defs.map(d => getDocs(collection(db, d[0])).catch(e => { if (d[0] === 'cameras') return { docs: [], size: 0 }; throw e; })));
   if (tk !== dash.t || !$('#st')) return;
   $('#st').innerHTML = defs.map((d, i) => `<div class="stat go" role="button" tabindex="0" data-go="${d[2]}" style="animation-delay:${i * 80}ms"><i class="chev">›</i><b data-n="${i === 0 ? snaps[0].docs.filter(d => d.data().role === 'resident').length : snaps[i].size}">0</b>${d[1]}</div>`).join('');
   const pk = {}; snaps[0].docs.map(d => d.data()).filter(u => u.role === 'resident').forEach(u => { const p = u.purok || 'No purok'; pk[p] = (pk[p] || 0) + 1; }); const mx = Math.max(1, ...Object.values(pk));
@@ -392,7 +396,7 @@ function sos(el) {
 
 function alerts(el) {
   el.innerHTML = '<h2>Emergency alerts</h2><p class="muted">Alerts appear only while this app is open. Keep it open on duty phones and call back every SOS.</p><div id="list"></div>';
-  live('alerts', false, rows => $('#list').innerHTML = rows.length ? rows.map(r => `<div class="card"><div class="row"><h3>${esc(r.name)}</h3><span class="badge Rejected">SOS</span></div><p>Purok: ${esc(r.purok) || 'n/a'}</p>${r.lat ? `<p><a href="https://maps.google.com/?q=${r.lat},${r.lng}" target="_blank" rel="noopener">Open location in map</a></p>` : ''}<div class="muted">${fmt(r.createdAt)}</div></div>`).join('') : '<div class="empty">No alerts.</div>');
+  live('alerts', false, rows => $('#list').innerHTML = rows.length ? rows.map(r => `<div class="card"><div class="row"><h3>${esc(r.name)}</h3><span class="badge Rejected">SOS</span></div><p>Purok: ${esc(r.purok) || 'n/a'}</p>${r.lat ? `<p><a href="https://maps.google.com/?q=${r.lat},${r.lng}" target="_blank" rel="noopener">Open location in map</a> <button type="button" class="btn sm" data-near="${r.lat},${r.lng}">📹 Nearby cameras</button></p>` : ''}<div class="muted">${fmt(r.createdAt)}</div></div>`).join('') : '<div class="empty">No alerts.</div>');
 }
 
 function residents(el) {
@@ -480,7 +484,7 @@ function livemap(el) {
   const off = me.role === 'official';
   el.innerHTML = `<h2>Live map</h2><div class="card row"><span class="muted">${off ? 'Residents who share their location appear here.' : 'Share your live location with barangay officials. Only officials can see it.'}</span><button class="btn sm" id="gt">${watchId != null ? 'Stop sharing' : 'Share my location'}</button></div><div id="map"></div>`;
   const m = L.map('map').setView([11.1086, 122.6431], 14), mk = {}; let fitted = false;
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(m); setTimeout(() => m.invalidateSize(), 700);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(m); setTimeout(() => m.invalidateSize(), 700); cctv.mapPins(m, L, () => { fitted = true; });
   const upd = (id, d) => {
     if (!d) { if (mk[id]) { m.removeLayer(mk[id]); delete mk[id]; } return; }
     const p = [d.lat, d.lng];
@@ -523,12 +527,19 @@ function chat(el) {
 /* ---------- New: home, hotlines, CSV ---------- */
 function home(el) {
   const h = new Date().getHours(), g = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
-  const Q = [['sos','🆘','SOS'],['requests','📄','Certificate'],['complaints','📝','Complaint'],['chat','💬','Chat'],['map','🗺️','Live map'],['hotlines','☎️','Hotlines']];
+  const Q = [['sos','🆘','SOS'],['requests','📄','Certificate'],['complaints','📝','Complaint'],['cctv','📹','Cameras'],['map','🗺️','Live map'],['events','📅','Events'],['garbage','🗑️','Garbage'],['chat','💬','Chat'],['hotlines','☎️','Hotlines']];
   el.innerHTML = `<div class="hero"><small>${g},</small><h1>${esc(me.name.split(' ')[0])}</h1><div class="wx" id="wx">Loading weather…</div><span class="badge ${me.verified ? 'Approved' : 'Pending'}">${me.verified ? 'Verified resident' : 'Not yet verified'}</span></div>
-  <div class="quick">${Q.map(q => `<button data-v="${q[0]}"><em>${q[1]}</em>${q[2]}</button>`).join('')}</div><h3 class="sec">Latest announcements</h3><div id="list"></div>`;
+  <div id="wxa"></div><div class="quick">${Q.map(q => `<button data-v="${q[0]}"><em>${q[1]}</em>${q[2]}</button>`).join('')}</div><h3 class="sec">Latest announcements</h3><div id="list"></div>`;
   $('.quick').onclick = e => { const b = e.target.closest('button'); b && go(b.dataset.v); };
-  fetch('https://api.open-meteo.com/v1/forecast?latitude=11.1086&longitude=122.6431&current=temperature_2m,weather_code,wind_speed_10m').then(r => r.json()).then(d => { const c = d.current, k = c.weather_code; $('#wx') && ($('#wx').innerHTML = `<b>${k == 0 ? '☀️' : k < 4 ? '⛅' : k < 50 ? '🌫️' : k < 70 ? '🌧️' : '⛈️'} ${Math.round(c.temperature_2m)}°C</b> Passi City · wind ${Math.round(c.wind_speed_10m)} km/h`); }).catch(() => $('#wx') && ($('#wx').textContent = 'Weather unavailable offline'));
+  fetch('https://api.open-meteo.com/v1/forecast?latitude=11.1086&longitude=122.6431&current=temperature_2m,weather_code,wind_speed_10m&daily=precipitation_probability_max,wind_gusts_10m_max&forecast_days=2&timezone=Asia%2FManila').then(r => r.json()).then(d => { const c = d.current, k = c.weather_code; wxAdvice(d); $('#wx') && ($('#wx').innerHTML = `<b>${k == 0 ? '☀️' : k < 4 ? '⛅' : k < 50 ? '🌫️' : k < 70 ? '🌧️' : '⛈️'} ${Math.round(c.temperature_2m)}°C</b> Passi City · wind ${Math.round(c.wind_speed_10m)} km/h`); }).catch(() => $('#wx') && ($('#wx').textContent = 'Weather unavailable offline'));
   live('announcements', false, rows => $('#list').innerHTML = rows.slice(0, 3).map(r => `<div class="card"><h3>${esc(r.title)}</h3><p>${esc(r.body)}</p><div class="muted">${fmt(r.createdAt)}</div></div>`).join('') || '<div class="empty">No announcements yet.</div>');
+}
+function wxAdvice(d) {
+  try {
+    const c = d.current, g = Math.max(0, ...(d.daily?.wind_gusts_10m_max || [])), p = Math.max(0, ...(d.daily?.precipitation_probability_max || [])), storm = c.weather_code >= 95 || g >= 60;
+    if (!(storm || p >= 85) || !$('#wxa')) return;
+    $('#wxa').innerHTML = `<div class="adv"><span><b>⚠️ Weather advisory:</b> ${storm ? `Posibleng malakas na hangin o thunderstorm (hanggang ${Math.round(g)} km/h).` : `Mataas ang tsansa ng ulan (${p}%).`} Maghanda at alamin ang evacuation center. Para sa opisyal na babala, sundin ang PAGASA at ang barangay.</span><button class="btn sm gold" data-go="evac">Evacuation centers</button></div>`;
+  } catch (_) { }
 }
 function hotlines(el) {
   const L = [['🚓','National Emergency','911'],['❤️','Philippine Red Cross','143'],['🏛️','Citizens Complaint Hotline','8888']];
@@ -613,7 +624,7 @@ function ask(msg, ok = 'Confirm') {
   document.addEventListener('submit', e => { const b = e.target.querySelector('button:not([type=button])'); if (!b || b.disabled) return; b.classList.add('busy'); b.disabled = true; setTimeout(() => { b.classList.remove('busy'); b.disabled = false; }, 1400); }, true);
   /* idle auto sign-out (shared devices, officials' data) */
   let idle, warn; const IDLE = 20 * 60e3;
-  const reset = () => { clearTimeout(idle); clearTimeout(warn); if (!me) return; warn = setTimeout(() => toast('You will be signed out soon due to inactivity'), IDLE - 60e3); idle = setTimeout(() => { if (me) { toast('Signed out due to inactivity'); $('#logout').click(); } }, IDLE); };
+  const reset = () => { clearTimeout(idle); clearTimeout(warn); if (!me) return; warn = setTimeout(() => toast('You will be signed out soon due to inactivity'), IDLE - 60e3); idle = setTimeout(() => { if (me && window.mtKeep) return reset(); if (me) { toast('Signed out due to inactivity'); $('#logout').click(); } }, IDLE); };
   ['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach(ev => addEventListener(ev, reset, { passive: true })); setInterval(() => !idle && me && reset(), 5000);
   /* command palette: Ctrl/Cmd+K */
   const open = () => {

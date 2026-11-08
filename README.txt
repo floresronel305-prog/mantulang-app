@@ -1,4 +1,4 @@
-BARANGAY MANTULANG APP v3.5 (launch-ready)
+BARANGAY MANTULANG APP v5.0 (Command Center)
 Upload ALL files to the root of the GitHub repo (replace same names).
 
 1) FIREBASE RULES (required, do first)
@@ -29,3 +29,12 @@ REAL AI (ChatGPT-style)
  1) Create an AI key at console.anthropic.com (billed separately per use). 2) Upload the ai-server folder to GitHub. 3) On render.com: New > Web Service > this repo, Root Directory = ai-server, Build = npm install, Start = npm start.
  4) Environment variables on Render: ANTHROPIC_API_KEY, FIREBASE_API_KEY (the apiKey in firebase-config.js), ALLOWED_ORIGIN (your site URL, no trailing slash).
  5) Put the Render URL inside ai-config.js. Never put the AI key in the repo. Only signed-in users can use it (20 questions per 10 minutes each).
+
+v5.0 UPGRADE: CCTV COMMAND CENTER (new files: cctv.js, cctv.css, firestore-cctv.rules, CCTV-SETUP.txt)
+ 1) Upload ALL files again (app.js, cctv.js, cctv.css, index.html, sw.js are new/changed).
+ 2) Firestore > Rules: paste the blocks from firestore-cctv.rules INSIDE your existing rules, then Publish.
+    Without this step the CCTV page shows "Cannot load cameras".
+ 3) Read CCTV-SETUP.txt to connect real cameras (RTSP must go through a small gateway such as go2rtc or MediaMTX).
+ 4) Officials: CCTV > Add camera. Residents only see cameras marked Public (also listed in All services).
+ 5) Also new: camera pins on the Live map, "Nearby cameras" button on every SOS alert, Access log (audit trail),
+    snapshot with timestamp, 1 / 2x2 / 3x3 wall, Monitor mode, weather advisory on Home, Cameras tile on the Dashboard.

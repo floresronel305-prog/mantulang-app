@@ -1,4 +1,4 @@
-const C='mantulang-v23',A=['./','index.html','style.css','futuristic.css','app.js','firebase-config.js','ai-config.js','manifest.webmanifest','icon-192.png','icon-512.png','lgu-logo.png'],X=/^https:\/\/(www\.gstatic\.com\/firebasejs|cdnjs\.cloudflare\.com|fonts\.(googleapis|gstatic)\.com)\//;
+const C='mantulang-v24',A=['./','index.html','style.css','futuristic.css','app.js','cctv.js','cctv.css','firebase-config.js','ai-config.js','manifest.webmanifest','icon-192.png','icon-512.png','lgu-logo.png'],X=/^https:\/\/(www\.gstatic\.com\/firebasejs|cdnjs\.cloudflare\.com|fonts\.(googleapis|gstatic)\.com)\//;
 self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(c=>c.addAll(A)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))).then(()=>clients.claim())));
 self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET')return;const same=r.url.startsWith(self.location.origin);if(!same&&!X.test(r.url))return;
