@@ -9,6 +9,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = t => t?.toDate ? t.toDate().toLocaleString('en-PH', {dateStyle:'medium', timeStyle:'short'}) : '';
 document.documentElement.dataset.theme = localStorage.theme || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
+$('#tout').onclick = () => $('#logout').click();
 $('#theme').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = localStorage.theme = t; };
 let me = null, nUnsub = null, uUnsub = null, watchId = null, unsub = null, registering = false, signup = false;
 
@@ -123,7 +124,7 @@ function settings(el) {
     <div class="card"><h3>Appearance</h3><div class="seg" id="th">${B(!dk, 'light', '☀️ Light') + B(dk, 'dark', '🌙 Dark')}</div></div>
     <div class="card"><h3>Text size</h3><input type="range" id="fs" min="14" max="22" value="${parseInt(localStorage.fs) || 16}"></div>
     <div class="card"><h3>Color theme</h3><div class="swatches" id="ac">${PAL.map(p => `<button class="sw ${cur === p[1] + ',' + p[2] ? 'on' : ''}" data-a="${p[1]},${p[2]}"><i style="background:linear-gradient(135deg,${p[1]},${p[2]})"></i>${p[0]}</button>`).join('')}</div></div>`;
-    $('#vm').onclick = e => { const b = e.target.closest('button'); if (b) { localStorage.vm = b.dataset.v; applyPrefs(); draw(); } };
+    $('#vm').onclick = e => { const b = e.target.closest('button'); if (b) { localStorage.vm = b.dataset.v; location.reload(); } };
     $('#th').onclick = e => { const b = e.target.closest('button'); if (b) { document.documentElement.dataset.theme = localStorage.theme = b.dataset.v; draw(); } };
     $('#fs').oninput = e => { localStorage.fs = e.target.value; applyPrefs(); };
     $('#ac').onclick = e => { const b = e.target.closest('button'); if (b) { localStorage.acc2 = b.dataset.a; applyPrefs(); draw(); } };
@@ -144,7 +145,7 @@ function applyPrefs() {
   const tc = document.querySelector('meta[name=theme-color]'); tc && (tc.content = c[0]);
 }
 applyPrefs(); addEventListener('resize', applyPrefs);
-$('#vw').onclick = () => { const o = ['auto','desktop','phone']; localStorage.vm = o[(o.indexOf(localStorage.vm || 'auto') + 1) % 3]; applyPrefs(); toast('View: ' + localStorage.vm); };
+$('#vw').onclick = () => { const o = ['auto','desktop','phone']; localStorage.vm = o[(o.indexOf(localStorage.vm || 'auto') + 1) % 3]; location.reload(); };
 
 function live(col, mine, render) {
   unsub && unsub();

@@ -194,3 +194,15 @@ html[data-view=phone] .top{display:flex;align-items:center;gap:10px;position:sti
 .toast{transition:transform .45s cubic-bezier(.3,1.5,.5,1)}.sheet-in{animation:slideUp .45s cubic-bezier(.2,.9,.3,1) both}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
 html[data-view=phone] .view{padding-top:18px}
+
+.top-out{margin-left:auto;border:1.5px solid #ffffff88;background:#ffffff22;color:#fff;border-radius:99px;padding:7px 14px;font-weight:600;font-size:.8rem;cursor:pointer}.top-out:active{transform:scale(.94)}
+
+/* ---- v6: phone view fixes ---- */
+html[data-view=phone] .app{grid-template-rows:auto 1fr;align-content:start}
+html[data-view=phone] .top{align-self:start}
+html[data-view=phone] .quick{grid-template-columns:repeat(3,1fr)}
+html[data-view=phone] .quick.big{grid-template-columns:repeat(3,1fr)}
+html[data-view=phone] #nav button{flex:0 0 66px;min-width:0;overflow:hidden}
+html[data-view=phone] #nav button span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-view=phone] .hero h1{font-size:1.7rem}
+html[data-view=phone] body{overflow-x:hidden}
