@@ -6,7 +6,7 @@
 <title>Barangay Mantulang, Passi City</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1f5e3b"><link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1f5e3b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <link rel="stylesheet" href="style.css">
@@ -36,6 +36,9 @@
   </aside>
   <main id="view" class="view"></main>
 </div>
+<button id="fab" class="fab install" hidden>⬇️ Install app</button>
+<div id="sheet" class="sheet" hidden><div class="sheet-in"><h3>Install Barangay Mantulang</h3><ol id="steps"></ol><button class="btn" id="sheetX">Got it</button></div></div>
+<div id="off" class="offbar" hidden>📡 Offline: showing saved data</div>
 <div id="toast" class="toast"></div>
 <script type="module" src="app.js"></script>
 </body>

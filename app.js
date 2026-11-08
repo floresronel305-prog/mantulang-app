@@ -8,7 +8,7 @@ const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestor
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = t => t?.toDate ? t.toDate().toLocaleString('en-PH', {dateStyle:'medium', timeStyle:'short'}) : '';
-document.documentElement.dataset.theme = localStorage.theme || 'light';
+document.documentElement.dataset.theme = localStorage.theme || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
 $('#theme').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = localStorage.theme = t; };
 let me = null, nUnsub = null, uUnsub = null, watchId = null, unsub = null, registering = false, signup = false;
 
@@ -45,14 +45,15 @@ async function boot(u) {
   $('#auth').hidden = true; $('#app').hidden = false;
   $('#whoName').textContent = me.name; setRole();
   const nav = me.role === 'official'
-    ? [['dash','Dashboard'],['announcements','Announcements'],['events','Events'],['lostfound','Lost & found'],['requests','Requests'],['complaints','Complaints'],['alerts','Emergency alerts'],['map','Live map'],['chat','Chats'],['residents','Residents'],['households','Households'],['polls','Polls'],['officials','Directory'],['profile','My profile']]
-    : [['announcements','Announcements'],['events','Events'],['lostfound','Lost & found'],['requests','Certificates'],['complaints','Complaints'],['sos','Emergency'],['map','Live map'],['chat','Chats'],['households','My household'],['polls','Polls'],['notes','Notifications'],['officials','Officials'],['profile','My profile']];
-  $('#nav').innerHTML = nav.map(n => `<button data-v="${n[0]}">${n[1]}</button>`).join('');
-  $('#nav').onclick = e => e.target.dataset.v && go(e.target.dataset.v);
+    ? [['dash','Dashboard'],['announcements','Announcements'],['events','Events'],['lostfound','Lost & found'],['requests','Requests'],['complaints','Complaints'],['alerts','Emergency alerts'],['map','Live map'],['chat','Chats'],['residents','Residents'],['households','Households'],['polls','Polls'],['officials','Directory'],['hotlines','Hotlines'],['profile','My profile']]
+    : [['home','Home'],['announcements','Announcements'],['events','Events'],['lostfound','Lost & found'],['requests','Certificates'],['complaints','Complaints'],['sos','Emergency'],['map','Live map'],['chat','Chats'],['households','My household'],['polls','Polls'],['notes','Notifications'],['officials','Officials'],['hotlines','Hotlines'],['profile','My profile']];
+  $('#nav').innerHTML = nav.map(n => `<button data-v="${n[0]}"><em>${IC[n[0]] || '•'}</em><span>${n[1]}</span></button>`).join('');
+  $('#nav').onclick = e => { const b = e.target.closest('button'); b && go(b.dataset.v); };
   watchNotes(); go(nav[0][0]);
 }
 
 /* ---------- Views ---------- */
+const IC = {home:'🏠',dash:'📊',announcements:'📢',events:'📅',lostfound:'🔎',requests:'📄',complaints:'📝',alerts:'🚨',sos:'🆘',map:'🗺️',chat:'💬',residents:'👥',households:'🏘️',polls:'🗳️',notes:'🔔',officials:'🏛️',hotlines:'☎️',profile:'👤'};
 const FORMS = {
   lostfound: { title:'Lost & found', post:'any', fields:'<select name="kind"><option>Lost</option><option>Found</option></select><input name="title" placeholder="Item (e.g. black wallet)" required><textarea name="body" placeholder="Where and when, and how to contact you" required></textarea>', btn:'Post item', head:r=>r.kind + ': ' + r.title, text:r=>r.body },
   households: { title:'Household records', post:'resident', private:true, fields:'<input name="title" placeholder="Household head" required><input name="members" type="number" min="1" placeholder="Number of members" required><textarea name="body" placeholder="Member names and ages, notes (PWD, senior, 4Ps)"></textarea>', btn:'Save household', head:r=>r.title, text:r=>r.members + ' members. ' + (r.body || ''), cols:[['Date',r=>fmt(r.createdAt)],['Head',r=>r.title],['Purok',r=>r.purok],['Members',r=>r.members],['Notes',r=>r.body]] },
@@ -72,7 +73,7 @@ function live(col, mine, render) {
 function go(v) {
   document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
   const el = $('#view'); unsub && unsub(); el.innerHTML = '';
-  ({ dash, sos, alerts, residents, profile, polls, notes, map: livemap, chat }[v] || (() => page(v, el)))(el);
+  ({ home, hotlines, dash, sos, alerts, residents, profile, polls, notes, map: livemap, chat }[v] || (() => page(v, el)))(el);
 }
 
 function printCert(r) {
@@ -83,7 +84,7 @@ function printCert(r) {
 
 function page(col, el) {
   const F = FORMS[col], off = me.role === 'official', canPost = (F.post === 'any' || F.post === me.role) && !(col === 'requests' && !me.verified);
-  el.innerHTML = `<h2>${F.title}</h2>${off && F.cols ? '<button class="btn sm gold" id="rep">Print report (PDF)</button>' : ''}${col === 'requests' && me.role === 'resident' && !me.verified ? '<div class="card">Your account must be verified by a barangay official before you can request certificates. Please bring a valid ID to the barangay hall.</div>' : ''}` + (canPost ? `<form class="card" id="f">${F.fields}<button class="btn">${F.btn}</button></form>` : '') + '<input id="q" placeholder="Search"><div id="list"></div>';
+  el.innerHTML = `<h2>${F.title}</h2>${off && F.cols ? '<button class="btn sm gold" id="rep">Print report (PDF)</button> <button class="btn sm" id="csv">Export CSV</button>' : ''}${col === 'requests' && me.role === 'resident' && !me.verified ? '<div class="card">Your account must be verified by a barangay official before you can request certificates. Please bring a valid ID to the barangay hall.</div>' : ''}` + (canPost ? `<form class="card" id="f">${F.fields}<button class="btn">${F.btn}</button></form>` : '') + '<input id="q" placeholder="Search"><div id="list"></div>';
   if (canPost) $('#f').onsubmit = async e => {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.target));
@@ -109,7 +110,7 @@ function page(col, el) {
       ${F.cert && ['Approved', 'Released'].includes(r.status) ? `<button class="btn sm" data-p="${r.id}">Print certificate</button>` : ''}
       ${(off || r.uid === me.uid) && !F.st ? `<button class="btn sm red" data-del="${r.id}">Delete</button>` : ''}</div></div>`).join('') : '<div class="empty">Nothing here yet.</div>';
   };
-  $('#q').oninput = draw; if ($('#rep')) $('#rep').onclick = () => printReport(F, all);
+  $('#q').oninput = draw; if ($('#rep')) { $('#rep').onclick = () => printReport(F, all); $('#csv').onclick = () => csv(F, all); }
   live(col, (F.st || F.private) && !off, rows => { all = rows; draw(); });
   $('#list').onclick = async e => {
     const b = e.target;
@@ -120,7 +121,8 @@ function page(col, el) {
 }
 
 function profile(el) {
-  el.innerHTML = `<h2>My profile</h2><form class="card" id="f"><input name="name" value="${esc(me.name)}" placeholder="Full name" required><input name="purok" value="${esc(me.purok)}" placeholder="Purok / Sitio"><input name="phone" value="${esc(me.phone)}" placeholder="Mobile number"><button class="btn">Save changes</button></form>`;
+  setTimeout(() => { bindInstall(); $('#t2').onclick = () => $('#theme').click(); $('#lo2').onclick = () => $('#logout').click(); }, 0);
+  el.innerHTML = `<div class="card row"><button class="btn sm gold install" hidden>⬇️ Install app</button><button class="btn sm" id="t2">🌗 Dark / light</button><button class="btn sm red" id="lo2">Sign out</button></div><h2>My profile</h2><form class="card" id="f"><input name="name" value="${esc(me.name)}" placeholder="Full name" required><input name="purok" value="${esc(me.purok)}" placeholder="Purok / Sitio"><input name="phone" value="${esc(me.phone)}" placeholder="Mobile number"><button class="btn">Save changes</button></form>`;
   $('#f').onsubmit = async e => {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.target));
@@ -133,6 +135,8 @@ async function dash(el) {
   const defs = [['users','Residents'],['requests','Requests'],['complaints','Complaints'],['alerts','Alerts'],['households','Households']];
   const snaps = await Promise.all(defs.map(d => getDocs(collection(db, d[0]))));
   $('#st').innerHTML = defs.map((d, i) => `<div class="stat" style="animation-delay:${i * 80}ms"><b data-n="${snaps[i].size}">0</b>${d[1]}</div>`).join('');
+  const pend = snaps[1].docs.filter(d => d.data().status === 'Pending').length, opn = snaps[2].docs.filter(d => d.data().status !== 'Resolved').length;
+  $('#st').insertAdjacentHTML('beforeend', [['⏳ Pending requests', pend], ['⚠️ Open complaints', opn]].map(x => `<div class="stat warn"><b data-n="${x[1]}">0</b>${x[0]}</div>`).join(''));
   document.querySelectorAll('[data-n]').forEach(b => { const n = +b.dataset.n; let c = 0; const t = setInterval(() => { c += Math.max(1, Math.ceil(n / 20)); if (c >= n) { c = n; clearInterval(t); } b.textContent = c; }, 40); });
 }
 
@@ -201,12 +205,17 @@ function polls(el) {
 
 function watchNotes() {
   uUnsub && uUnsub(); uUnsub = onSnapshot(doc(db, 'users', me.uid), s => { if (s.exists()) { Object.assign(me, s.data()); setRole(); } });
-  nUnsub && nUnsub(); if (me.role === 'official') return;
+  nUnsub && nUnsub();
+  if (me.role === 'official') {
+    let f = true;
+    nUnsub = onSnapshot(collection(db, 'alerts'), s => { if (!f) s.docChanges().filter(c => c.type === 'added').forEach(c => { const a = c.doc.data(); toast('🚨 SOS from ' + a.name); navigator.vibrate && navigator.vibrate([300, 100, 300]); window.Notification && Notification.permission === 'granted' && new Notification('SOS: ' + a.name, { body: a.purok || '' }); }); f = false; });
+    window.Notification && Notification.permission === 'default' && Notification.requestPermission(); return;
+  }
   let first = true;
   nUnsub = onSnapshot(query(collection(db, 'notifications'), where('to', '==', me.uid)), s => {
     me.notes = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
     const u = me.notes.filter(n => !n.read).length, b = document.querySelector('[data-v=notes]');
-    if (b) b.textContent = 'Notifications' + (u ? ` (${u})` : '');
+    if (b) b.lastChild.textContent = 'Notifications' + (u ? ` (${u})` : '');
     if (!first) s.docChanges().filter(c => c.type === 'added').forEach(c => { toast(c.doc.data().text); if (window.Notification && Notification.permission === 'granted') new Notification('Barangay Mantulang', { body: c.doc.data().text }); });
     first = false;
   });
@@ -265,12 +274,43 @@ function chat(el) {
   };
 }
 
-/* ---------- Install app (PWA) ---------- */
+/* ---------- New: home, hotlines, CSV ---------- */
+function home(el) {
+  const h = new Date().getHours(), g = h < 12 ? 'Magandang umaga' : h < 18 ? 'Magandang hapon' : 'Magandang gabi';
+  const Q = [['sos','🆘','SOS'],['requests','📄','Certificate'],['complaints','📝','Complaint'],['chat','💬','Chat'],['map','🗺️','Live map'],['hotlines','☎️','Hotlines']];
+  el.innerHTML = `<div class="hero"><small>${g},</small><h1>${esc(me.name.split(' ')[0])} 👋</h1><div class="wx" id="wx">Loading weather…</div><span class="badge ${me.verified ? 'Approved' : 'Pending'}">${me.verified ? '✔ Verified resident' : 'Not yet verified'}</span></div>
+  <div class="quick">${Q.map(q => `<button data-v="${q[0]}"><em>${q[1]}</em>${q[2]}</button>`).join('')}</div><h3 class="sec">Latest announcements</h3><div id="list"></div>`;
+  $('.quick').onclick = e => { const b = e.target.closest('button'); b && go(b.dataset.v); };
+  fetch('https://api.open-meteo.com/v1/forecast?latitude=11.1086&longitude=122.6431&current=temperature_2m,weather_code,wind_speed_10m').then(r => r.json()).then(d => { const c = d.current, k = c.weather_code; $('#wx') && ($('#wx').innerHTML = `<b>${k == 0 ? '☀️' : k < 4 ? '⛅' : k < 50 ? '🌫️' : k < 70 ? '🌧️' : '⛈️'} ${Math.round(c.temperature_2m)}°C</b> Passi City · wind ${Math.round(c.wind_speed_10m)} km/h`); }).catch(() => $('#wx') && ($('#wx').textContent = 'Weather unavailable offline'));
+  live('announcements', false, rows => $('#list').innerHTML = rows.slice(0, 3).map(r => `<div class="card"><h3>${esc(r.title)}</h3><p>${esc(r.body)}</p><div class="muted">${fmt(r.createdAt)}</div></div>`).join('') || '<div class="empty">No announcements yet.</div>');
+}
+function hotlines(el) {
+  const L = [['🚓','National Emergency','911'],['❤️','Philippine Red Cross','143'],['🏛️','Citizens Complaint Hotline','8888']];
+  el.innerHTML = '<h2>Emergency hotlines</h2>' + L.map(x => `<a class="card hot" href="tel:${x[2]}"><span>${x[0]}</span><div><h3>${x[1]}</h3><div class="muted">Tap to call</div></div><b>${x[2]}</b></a>`).join('') + '<div class="card"><h3>Local contacts</h3><p>Barangay officials and their numbers are in the Directory.</p><button class="btn sm" id="dir">Open directory</button></div>';
+  $('#dir').onclick = () => go('officials');
+}
+function csv(F, rows) {
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const t = [F.cols.map(c => q(c[0])).join(',')].concat(rows.map(r => F.cols.map(c => q(c[1](r))).join(','))).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + t], { type: 'text/csv' })); a.download = F.title + '.csv'; a.click();
+}
+
+/* ---------- Install app (PWA) + offline ---------- */
 let installEvt = null;
+const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone, ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
 addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; });
-const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-document.querySelectorAll('.install').forEach(b => {
-  b.hidden = standalone;
-  b.onclick = async () => { if (installEvt) { installEvt.prompt(); installEvt = null; } else toast('Browser menu (three dots or Share) > Add to Home screen / Install app'); };
-});
+addEventListener('appinstalled', () => document.querySelectorAll('.install').forEach(b => b.hidden = true));
+function bindInstall() {
+  document.querySelectorAll('.install').forEach(b => {
+    b.hidden = standalone;
+    b.onclick = async () => {
+      if (installEvt) { installEvt.prompt(); await installEvt.userChoice; installEvt = null; return; }
+      $('#steps').innerHTML = (ios ? ['Tap the <b>Share</b> button in Safari','Scroll and tap <b>Add to Home Screen</b>','Tap <b>Add</b>'] : ['Open the browser menu <b>⋮</b>','Tap <b>Install app</b> or <b>Add to Home screen</b>','Confirm']).map(s => `<li>${s}</li>`).join('');
+      $('#sheet').hidden = false;
+    };
+  });
+}
+bindInstall();
+$('#sheetX').onclick = () => $('#sheet').hidden = true;
+const net = () => $('#off').hidden = navigator.onLine; addEventListener('online', net); addEventListener('offline', net); net();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
