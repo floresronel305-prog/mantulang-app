@@ -32,5 +32,6 @@
   "government",
   "utilities"
  ],
- "description": "Barangay Mantulang, Passi City: public services in your pocket."
+ "description": "Barangay Mantulang, Passi City: public services in your pocket.",
+ "prefers_related_applications": false
 }

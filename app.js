@@ -1,10 +1,10 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, addDoc, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app), store = getStorage(app);
+const app = initializeApp(firebaseConfig), auth = getAuth(app), db = (() => { try { return initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); } catch (_) { return getFirestore(app); } })(), store = getStorage(app);
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = t => t?.toDate ? t.toDate().toLocaleString('en-PH', {dateStyle:'medium', timeStyle:'short'}) : '';
@@ -153,7 +153,7 @@ function broadcast(el) {
   el.innerHTML = '<h2>Broadcast</h2><form class="card" id="f"><input name="t" placeholder="Message to all residents" required><button class="btn">Send to everyone</button></form>';
   $('#f').onsubmit = async e => {
     e.preventDefault(); const t = e.target.t.value, rs = (await getDocs(collection(db, 'users'))).docs.filter(d => d.data().role === 'resident');
-    if (!confirm('Send to ' + rs.length + ' residents?')) return;
+    if (!await ask('Send to ' + rs.length + ' residents?')) return;
     await Promise.all(rs.map(d => addDoc(collection(db, 'notifications'), { to: d.id, text: '📢 ' + t, read: false, createdAt: serverTimestamp() }))); e.target.reset(); toast('Sent to ' + rs.length);
   };
 }
@@ -213,6 +213,8 @@ function go(v) {
   document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v || (b.dataset.v === 'more' && !document.querySelector('#nav [data-v="' + v + '"]'))));
   const el = $('#view'); unsub && unsub(); el.innerHTML = ''; animUntil = performance.now() + 900; el.classList.remove('vin'); void el.offsetWidth; el.classList.add('vin'); scrollTo({ top: 0, behavior: 'smooth' });
   ({ about, more, myid, broadcast, backup, gobag, settings, home, hotlines, dash, sos, alerts, residents, profile, polls, notes, map: livemap, chat }[v] || (() => page(v, el)))(el);
+  document.querySelectorAll('#nav button').forEach(b => b.classList.contains('on') ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
+  const L0 = el.querySelector('#list'); if (L0 && !L0.innerHTML) L0.innerHTML = '<div class="skl"></div>'.repeat(3);
   if (v !== 'more' && v !== 'home' && v !== 'about') { const h = el.querySelector('h2'); h && h.insertAdjacentHTML('afterend', infoOf(v)); }
 }
 
@@ -258,7 +260,7 @@ function page(col, el) {
     if (b.dataset.s) { await updateDoc(doc(db, col, b.dataset.id), { status: b.dataset.s }); const r = all.find(x => x.id === b.dataset.id); await addDoc(collection(db, 'notifications'), { to: r.uid, text: 'Your ' + r.title + ' is now ' + b.dataset.s, read: false, createdAt: serverTimestamp() }); toast('Marked ' + b.dataset.s); }
     if (b.dataset.edit) { const r = all.find(x => x.id === b.dataset.edit), t = prompt('Title', r.title); if (t === null) return; const bd = prompt('Details', r.body ?? ''); await updateDoc(doc(db, col, r.id), { title: t, ...(bd !== null ? { body: bd } : {}) }); toast('Updated'); }
     if (b.dataset.p) printCert(all.find(r => r.id === b.dataset.p));
-    if (b.dataset.del && confirm('Delete this entry?')) { await deleteDoc(doc(db, col, b.dataset.del)); toast('Deleted'); }
+    if (b.dataset.del && await ask('Delete this entry?')) { await deleteDoc(doc(db, col, b.dataset.del)); toast('Deleted'); }
   };
 }
 
@@ -286,7 +288,7 @@ async function dash(el) {
 
 function sos(el) {
   el.innerHTML = '<h2>Emergency</h2><p class="muted">One tap alerts barangay officials with your name, purok and location. Officials see it only while they have the app open, so for life-threatening emergencies also call <b>911</b> or the barangay hotline.</p><button class="sos" id="sos">SOS</button>';
-  $('#sos').onclick = async () => { if (!confirm('Send an emergency alert to barangay officials?')) return; const pos = await new Promise(r => navigator.geolocation ? navigator.geolocation.getCurrentPosition(p => r(p.coords), () => r(null), { timeout: 6000 }) : r(null)); await addDoc(collection(db, 'alerts'), { uid: me.uid, name: me.name, purok: me.purok || '', lat: pos ? pos.latitude : null, lng: pos ? pos.longitude : null, createdAt: serverTimestamp() }); toast('Alert sent. Help is being notified.'); };
+  $('#sos').onclick = async () => { if (!await ask('Send an emergency alert to barangay officials?')) return; const pos = await new Promise(r => navigator.geolocation ? navigator.geolocation.getCurrentPosition(p => r(p.coords), () => r(null), { timeout: 6000 }) : r(null)); await addDoc(collection(db, 'alerts'), { uid: me.uid, name: me.name, purok: me.purok || '', lat: pos ? pos.latitude : null, lng: pos ? pos.longitude : null, createdAt: serverTimestamp() }); toast('Alert sent. Help is being notified.'); };
 }
 
 function alerts(el) {
@@ -304,7 +306,7 @@ function residents(el) {
   $('#q').oninput = draw;
   live('users', false, r => { all = r; draw(); });
   $('#list').onclick = async e => {
-    const b = e.target; if (b.dataset.up) { if (confirm('Make this person a barangay official? They get full admin access.')) { await updateDoc(doc(db, 'users', b.dataset.up), { role: 'official' }); toast('Promoted to official'); } return; } if (!b.dataset.id) return;
+    const b = e.target; if (b.dataset.up) { if (await ask('Make this person a barangay official? They get full admin access.')) { await updateDoc(doc(db, 'users', b.dataset.up), { role: 'official' }); toast('Promoted to official'); } return; } if (!b.dataset.id) return;
     const v = b.dataset.ok === '1';
     await updateDoc(doc(db, 'users', b.dataset.id), { verified: v });
     if (v) await addDoc(collection(db, 'notifications'), { to: b.dataset.id, text: 'Your account is verified. You can now request certificates.', read: false, createdAt: serverTimestamp() });
@@ -343,7 +345,7 @@ function polls(el) {
   $('#list').onclick = async e => {
     const b = e.target;
     if (b.dataset.c) { await setDoc(doc(db, 'votes', b.dataset.p + '_' + me.uid), { pollId: b.dataset.p, uid: me.uid, choice: +b.dataset.c }); toast('Vote recorded'); draw(); }
-    if (b.dataset.del && confirm('Delete this poll?')) await deleteDoc(doc(db, 'polls', b.dataset.del));
+    if (b.dataset.del && await ask('Delete this poll?')) await deleteDoc(doc(db, 'polls', b.dataset.del));
   };
 }
 
@@ -388,10 +390,10 @@ function livemap(el) {
   };
   unsub = off ? onSnapshot(collection(db, 'locations'), s => s.docChanges().forEach(c => upd(c.doc.id, c.type === 'removed' ? null : c.doc.data())))
               : onSnapshot(doc(db, 'locations', me.uid), s => upd(me.uid, s.exists() ? s.data() : null));
-  $('#gt').onclick = () => {
+  $('#gt').onclick = async () => {
     if (watchId != null) { navigator.geolocation.clearWatch(watchId); watchId = null; deleteDoc(doc(db, 'locations', me.uid)); $('#gt').textContent = 'Share my location'; return toast('Location sharing stopped'); }
     if (!navigator.geolocation) return toast('GPS is not supported on this device');
-    if (!confirm('Share your live location with barangay officials until you tap Stop sharing?')) return;
+    if (!await ask('Share your live location with barangay officials until you tap Stop sharing?')) return;
     watchId = navigator.geolocation.watchPosition(p => setDoc(doc(db, 'locations', me.uid), { lat: p.coords.latitude, lng: p.coords.longitude, name: me.name, purok: me.purok || '', updatedAt: serverTimestamp() }), () => toast('Allow location access in your browser'), { enableHighAccuracy: true, maximumAge: 5000 });
     $('#gt').textContent = 'Stop sharing'; toast('Sharing your live location');
   };
@@ -492,4 +494,44 @@ var animUntil = 0;
     const b = t.getBoundingClientRect(), x = (e.clientX - b.left) / b.width - .5, y = (e.clientY - b.top) / b.height - .5;
     t.style.transform = `perspective(800px) rotateX(${-y * 5}deg) rotateY(${x * 6}deg) translateY(-2px)`;
   });
+}
+
+/* ---------- v12: enterprise layer ---------- */
+function ask(msg, ok = 'Confirm') {
+  return new Promise(res => {
+    const o = document.createElement('div'), prev = document.activeElement; o.className = 'modal';
+    o.innerHTML = `<div class="dlg" role="alertdialog" aria-modal="true"><p>${esc(msg)}</p><div class="row" style="justify-content:flex-end"><button class="btn gold" data-r="0">Cancel</button><button class="btn" data-r="1">${ok}</button></div></div>`;
+    const done = v => { document.removeEventListener('keydown', k); o.classList.add('bye'); setTimeout(() => o.remove(), 250); prev && prev.focus && prev.focus(); res(v); };
+    const k = e => e.key === 'Escape' && done(false);
+    o.onclick = e => { const b = e.target.closest('[data-r]'); if (b) done(b.dataset.r === '1'); else if (e.target === o) done(false); };
+    document.addEventListener('keydown', k); document.body.append(o); o.querySelector('[data-r="1"]').focus();
+  });
+}
+{
+  const t = $('#toast'); t.setAttribute('role', 'status'); t.setAttribute('aria-live', 'polite');
+  $('#view').setAttribute('tabindex', '-1');
+  /* busy buttons: no double submits */
+  document.addEventListener('submit', e => { const b = e.target.querySelector('button:not([type=button])'); if (!b || b.disabled) return; b.classList.add('busy'); b.disabled = true; setTimeout(() => { b.classList.remove('busy'); b.disabled = false; }, 1400); }, true);
+  /* idle auto sign-out (shared devices, officials' data) */
+  let idle, warn; const IDLE = 20 * 60e3;
+  const reset = () => { clearTimeout(idle); clearTimeout(warn); if (!me) return; warn = setTimeout(() => toast('You will be signed out soon due to inactivity'), IDLE - 60e3); idle = setTimeout(() => { if (me) { toast('Signed out due to inactivity'); $('#logout').click(); } }, IDLE); };
+  ['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach(ev => addEventListener(ev, reset, { passive: true })); setInterval(() => !idle && me && reset(), 5000);
+  /* command palette: Ctrl/Cmd+K */
+  const open = () => {
+    if (!me || $('#cmd')) return;
+    const nav = [...document.querySelectorAll('#nav button')].map(b => [b.dataset.v, b.textContent.trim()]).filter(x => x[0] !== 'more');
+    const off = me.role === 'official', seen = new Set(nav.map(x => x[0]));
+    const items = nav.concat(MORE.map(m => m[0]).filter(k => !seen.has(k) && !(k === 'myid' && off) && !(OFFONLY.includes(k) && !off)).map(k => [k, NAME[k] || FORMS[k].title]));
+    const o = document.createElement('div'); o.id = 'cmd'; o.className = 'modal top';
+    o.innerHTML = '<div class="dlg pal" role="dialog" aria-label="Search"><input id="cq" placeholder="Search pages and services…" autocomplete="off"><div id="cl" role="listbox"></div><small class="muted">↑ ↓ to move · Enter to open · Esc to close</small></div>';
+    let sel = 0, cur = items; const close = () => { document.removeEventListener('keydown', kd); o.classList.add('bye'); setTimeout(() => o.remove(), 250); };
+    const draw = () => { $('#cl').innerHTML = cur.map((x, i) => `<button data-v="${x[0]}" class="${i === sel ? 'on' : ''}"><em>${IC[x[0]] || '•'}</em>${esc(x[1])}</button>`).join('') || '<div class="empty">No results</div>'; const s = $('#cl .on'); s && s.scrollIntoView({ block: 'nearest' }); };
+    const kd = e => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowDown') { sel = Math.min(cur.length - 1, sel + 1); draw(); e.preventDefault(); } else if (e.key === 'ArrowUp') { sel = Math.max(0, sel - 1); draw(); e.preventDefault(); } else if (e.key === 'Enter' && cur[sel]) { close(); go(cur[sel][0]); } };
+    o.onclick = e => { const b = e.target.closest('#cl button'); if (b) { close(); go(b.dataset.v); } else if (e.target === o) close(); };
+    document.addEventListener('keydown', kd); document.body.append(o); draw(); const q = $('#cq'); q.focus();
+    q.oninput = () => { const k = q.value.toLowerCase(); cur = items.filter(x => x[1].toLowerCase().includes(k)); sel = 0; draw(); };
+  };
+  addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); open(); } });
+  const sb = document.createElement('button'); sb.className = 'link'; sb.textContent = 'Search (Ctrl K)'; sb.onclick = open; $('.who').prepend(sb);
+  const tb = document.createElement('button'); tb.className = 'top-out'; tb.textContent = '🔍'; tb.setAttribute('aria-label', 'Search'); tb.style.marginLeft = 'auto'; tb.onclick = open; $('.top').insertBefore(tb, $('#tout')); $('#tout').style.marginLeft = '0';
 }

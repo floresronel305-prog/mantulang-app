@@ -402,3 +402,24 @@ html .badge{animation:badge .5s var(--spring) both}
  *,*::before,*::after{animation-iteration-count:1!important;animation-duration:.4s!important;transition-duration:.2s!important}
  .rv,.msg.rv{transform:none}
 }
+
+/* ===== v12: enterprise polish ===== */
+.modal{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:#06122acc;backdrop-filter:blur(6px);animation:fade .25s var(--ease)}
+.modal.top{align-items:start;padding-top:12vh}.modal.bye{animation:fadeOut .25s forwards}
+@keyframes fadeOut{to{opacity:0}}
+.dlg{width:min(420px,100%);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 30px 80px #0008;animation:dlgIn .4s var(--spring)}
+.modal.bye .dlg{animation:dlgOut .25s forwards}
+@keyframes dlgIn{from{opacity:0;transform:translateY(16px) scale(.94)}}@keyframes dlgOut{to{opacity:0;transform:scale(.96)}}
+.dlg p{margin:0 0 18px;font-weight:600;line-height:1.5}
+.pal{width:min(560px,100%);padding:12px}.pal input{margin:0 0 8px;font-size:1rem}
+#cl{max-height:48vh;overflow:auto;display:grid;gap:2px;margin-bottom:8px}
+#cl button{display:flex;gap:12px;align-items:center;text-align:left;border:0;background:none;color:var(--ink);padding:10px 12px;border-radius:10px;cursor:pointer;font:inherit;transition:background .15s,transform .2s var(--ease)}
+#cl button.on,#cl button:hover{background:color-mix(in srgb,var(--navy) 12%,transparent);transform:translateX(3px)}
+#cl em{font-style:normal;width:26px;text-align:center}
+.skl{height:84px;border-radius:12px;margin-bottom:12px;background:linear-gradient(100deg,var(--line) 30%,color-mix(in srgb,var(--line) 40%,var(--card)) 50%,var(--line) 70%) 0 0/200% 100%;animation:skel 1.3s linear infinite}
+.btn.busy{pointer-events:none;opacity:.8}.btn.busy::before{content:"";display:inline-block;width:.9em;height:.9em;margin-right:8px;vertical-align:-2px;border:2px solid #fff6;border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+.btn.gold.busy::before{border-color:#0b3d9144;border-top-color:var(--navy)}
+:focus-visible{outline:3px solid #1e6fe0;outline-offset:2px}
+#view:focus{outline:none}
+@media print{.side,.top,.fab,.toast,.offbar,.modal,#splash,body::before,body::after{display:none!important}.app{display:block}.card,.stat{box-shadow:none!important;break-inside:avoid;animation:none!important;opacity:1!important;transform:none!important}}
+.skip{position:fixed;left:12px;top:-60px;z-index:200;background:var(--navy);color:#fff;padding:10px 16px;border-radius:10px;transition:top .2s}.skip:focus{top:12px}
