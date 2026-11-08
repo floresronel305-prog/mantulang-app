@@ -211,7 +211,7 @@ function live(col, mine, render) {
 
 function go(v) {
   document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v || (b.dataset.v === 'more' && !document.querySelector('#nav [data-v="' + v + '"]'))));
-  const el = $('#view'); unsub && unsub(); el.innerHTML = '';
+  const el = $('#view'); unsub && unsub(); el.innerHTML = ''; animUntil = performance.now() + 900; el.classList.remove('vin'); void el.offsetWidth; el.classList.add('vin'); scrollTo({ top: 0, behavior: 'smooth' });
   ({ about, more, myid, broadcast, backup, gobag, settings, home, hotlines, dash, sos, alerts, residents, profile, polls, notes, map: livemap, chat }[v] || (() => page(v, el)))(el);
   if (v !== 'more' && v !== 'home' && v !== 'about') { const h = el.querySelector('h2'); h && h.insertAdjacentHTML('afterend', infoOf(v)); }
 }
@@ -281,7 +281,7 @@ async function dash(el) {
   $('#view').insertAdjacentHTML('beforeend', '<h3 class="sec">Residents per purok</h3>' + Object.entries(pk).map(([p, n]) => `<div class="bar"><i style="width:${n * 100 / mx}%"></i><span>${esc(p)}: ${n}</span></div>`).join(''));
   const pend = snaps[1].docs.filter(d => d.data().status === 'Pending').length, opn = snaps[2].docs.filter(d => d.data().status !== 'Resolved').length;
   $('#st').insertAdjacentHTML('beforeend', [['⏳ Pending requests', pend], ['⚠️ Open complaints', opn]].map(x => `<div class="stat warn"><b data-n="${x[1]}">0</b>${x[0]}</div>`).join(''));
-  document.querySelectorAll('[data-n]').forEach(b => { const n = +b.dataset.n; let c = 0; const t = setInterval(() => { c += Math.max(1, Math.ceil(n / 20)); if (c >= n) { c = n; clearInterval(t); } b.textContent = c; }, 40); });
+  document.querySelectorAll('[data-n]').forEach(b => { const n = +b.dataset.n, t0 = performance.now(); (function f(t) { const p = Math.min(1, (t - t0) / 1100); b.textContent = Math.round(n * (1 - Math.pow(1 - p, 3))); p < 1 && requestAnimationFrame(f); })(t0); });
 }
 
 function sos(el) {
@@ -408,7 +408,7 @@ function chat(el) {
     unsub = onSnapshot(query(collection(db, 'messages'), where('room', '==', room)), s => {
       const rows = s.docs.map(d => d.data()).sort((a, b) => (a.createdAt?.seconds || 9e9) - (b.createdAt?.seconds || 9e9)).slice(-100);
       $('#msgs').innerHTML = rows.length ? rows.map(r => `<div class="msg ${r.uid === me.uid ? 'me' : ''}"><b>${esc(r.name)}${r.role === 'official' ? ' · Official' : ''}</b><span>${esc(r.text)}</span><i>${fmt(r.createdAt)}</i></div>`).join('') : '<div class="empty">No messages yet. Say hello.</div>';
-      $('#msgs').scrollTop = 1e9;
+      $('#msgs').scrollTo({ top: 1e9, behavior: 'smooth' });
     }, () => toast('Cannot load chat. Check Firestore rules.'));
   };
   $('#rm').onchange = e => { room = e.target.value; open(); };
@@ -468,3 +468,28 @@ document.addEventListener('pointerdown', e => {
   if (getComputedStyle(t).position === 'static') t.style.position = 'relative'; t.style.overflow = 'hidden';
   t.appendChild(d); d.onanimationend = () => d.remove();
 });
+
+/* ---------- v11: smooth motion (reveal, bars, tilt, theme fade) ---------- */
+var animUntil = 0;
+{
+  const SEL = '.card,.stat,.quick button,.svclist button,.bar,.hero,.idcard,.info,.empty,.msg,.view>h2,.view>.sec,.view>input';
+  const io = new IntersectionObserver(es => es.forEach(x => { if (x.isIntersecting) { const t = x.target; t.classList.add('in'); io.unobserve(t); setTimeout(() => t.classList.remove('rv', 'in'), 1100 + (parseInt(t.style.getPropertyValue('--d')) || 0)); } }), { threshold: .05 });
+  new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => {
+    if (n.nodeType !== 1) return;
+    const live = performance.now() < animUntil;
+    [n, ...n.querySelectorAll(SEL)].filter(x => x.matches(SEL) && !x.classList.contains('rv')).forEach((x, i) => {
+      if (!live && !(x.classList.contains('msg') && !x.nextElementSibling)) return;
+      x.style.setProperty('--d', Math.min(i, 10) * 60 + 'ms'); x.classList.add('rv'); io.observe(x);
+    });
+    (n.matches('.bar') ? [n] : [...n.querySelectorAll('.bar')]).forEach(b => { const i = b.firstElementChild, w = i && i.style.width; if (i) { i.style.width = '0'; requestAnimationFrame(() => requestAnimationFrame(() => i.style.width = w)); } });
+  }))).observe($('#view'), { childList: true, subtree: true });
+  const r = document.documentElement;
+  new MutationObserver(() => { r.classList.add('tt'); setTimeout(() => r.classList.remove('tt'), 600); }).observe(r, { attributes: true, attributeFilter: ['data-theme'] });
+  let tl = null;
+  document.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse') return; const t = e.target.closest('.hero,.idcard');
+    if (tl && tl !== t) tl.style.transform = ''; tl = t; if (!t) return;
+    const b = t.getBoundingClientRect(), x = (e.clientX - b.left) / b.width - .5, y = (e.clientY - b.top) / b.height - .5;
+    t.style.transform = `perspective(800px) rotateX(${-y * 5}deg) rotateY(${x * 6}deg) translateY(-2px)`;
+  });
+}
