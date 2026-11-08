@@ -53,7 +53,7 @@ async function boot(u) {
 }
 
 /* ---------- Views ---------- */
-const IC = {more:'🧩',programs:'🎯',jobs:'💼',ordinances:'⚖️',budget:'💰',evac:'🏫',health:'💉',garbage:'🗑️',relief:'📦',reports:'🛠️',idapps:'🪪',appointments:'🗓️',suggestions:'💡',registry:'♿',volunteers:'🙋',myid:'🆔',broadcast:'📣',backup:'💾',gobag:'🎒',settings:'⚙️',home:'🏠',dash:'📊',announcements:'📢',events:'📅',lostfound:'🔎',requests:'📄',complaints:'📝',alerts:'🚨',sos:'🆘',map:'🗺️',chat:'💬',residents:'👥',households:'🏘️',polls:'🗳️',notes:'🔔',officials:'🏛️',hotlines:'☎️',profile:'👤'};
+const IC = {about:'ℹ️',more:'🧩',programs:'🎯',jobs:'💼',ordinances:'⚖️',budget:'💰',evac:'🏫',health:'💉',garbage:'🗑️',relief:'📦',reports:'🛠️',idapps:'🪪',appointments:'🗓️',suggestions:'💡',registry:'♿',volunteers:'🙋',myid:'🆔',broadcast:'📣',backup:'💾',gobag:'🎒',settings:'⚙️',home:'🏠',dash:'📊',announcements:'📢',events:'📅',lostfound:'🔎',requests:'📄',complaints:'📝',alerts:'🚨',sos:'🆘',map:'🗺️',chat:'💬',residents:'👥',households:'🏘️',polls:'🗳️',notes:'🔔',officials:'🏛️',hotlines:'☎️',profile:'👤'};
 const FORMS = {
   lostfound: { title:'Lost & found', post:'any', fields:'<select name="kind"><option>Lost</option><option>Found</option></select><input name="title" placeholder="Item (e.g. black wallet)" required><textarea name="body" placeholder="Where and when, and how to contact you" required></textarea>', btn:'Post item', head:r=>r.kind + ': ' + r.title, text:r=>r.body },
   households: { title:'Household records', post:'resident', private:true, fields:'<input name="title" placeholder="Household head" required><input name="members" type="number" min="1" placeholder="Number of members" required><textarea name="body" placeholder="Member names and ages, notes (PWD, senior, 4Ps)"></textarea>', btn:'Save household', head:r=>r.title, text:r=>r.members + ' members. ' + (r.body || ''), cols:[['Date',r=>fmt(r.createdAt)],['Head',r=>r.title],['Purok',r=>r.purok],['Members',r=>r.members],['Notes',r=>r.body]] },
@@ -81,8 +81,8 @@ Object.assign(FORMS, {
   registry: { title:'Senior / PWD registry', post:'resident', private:true, cols:[['Name',r=>r.name],['Purok',r=>r.purok],['Type',r=>r.title],['Notes',r=>r.body]], fields:'<select name="title"><option>Senior citizen</option><option>PWD</option><option>Solo parent</option><option>4Ps</option></select>'+T('Name of person and details',''), btn:'Register', head:r=>r.title, text:r=>r.body || '' },
   volunteers: { title:'Volunteer sign-up', post:'resident', private:true, fields:I('title','What can you help with?')+T('Skills and availability',''), btn:'Sign up', head:r=>r.title, text:r=>r.body || '' }
 });
-const MORE = [['events'],['lostfound'],['complaints'],['programs'],['jobs'],['ordinances'],['budget'],['evac'],['health'],['garbage'],['relief'],['reports'],['idapps'],['appointments'],['suggestions'],['registry'],['volunteers'],['polls'],['households'],['map'],['officials'],['hotlines'],['myid'],['gobag'],['residents'],['broadcast'],['backup'],['settings'],['profile']], OFFONLY = ['residents','broadcast','backup'];
-const NAME = { myid:'Digital ID', gobag:'Go-bag', settings:'Settings', broadcast:'Broadcast', backup:'Backup', residents:'Residents', map:'Live map', officials:'Directory', hotlines:'Hotlines', profile:'My profile', polls:'Polls' };
+const MORE = [['events'],['lostfound'],['complaints'],['programs'],['jobs'],['ordinances'],['budget'],['evac'],['health'],['garbage'],['relief'],['reports'],['idapps'],['appointments'],['suggestions'],['registry'],['volunteers'],['polls'],['households'],['map'],['officials'],['hotlines'],['myid'],['gobag'],['residents'],['broadcast'],['backup'],['settings'],['about'],['profile']], OFFONLY = ['residents','broadcast','backup'];
+const NAME = { about:'About this app', myid:'Digital ID', gobag:'Go-bag', settings:'Settings', broadcast:'Broadcast', backup:'Backup', residents:'Residents', map:'Live map', officials:'Directory', hotlines:'Hotlines', profile:'My profile', polls:'Polls' };
 function more(el) {
   const off = me.role === 'official', nk = [...document.querySelectorAll('#nav button')].map(b => b.dataset.v);
   const L = MORE.map(m => m[0]).filter(k => !nk.includes(k) && !(k === 'myid' && off) && !(OFFONLY.includes(k) && !off));
@@ -114,13 +114,37 @@ function gobag(el) {
   el.innerHTML = '<h2>Emergency go-bag</h2><div class="card" id="gb">' + I2.map((x, i) => `<label class="chk"><input type="checkbox" data-i="${i}" ${s[i] ? 'checked' : ''}> ${x}</label>`).join('') + '</div>';
   $('#gb').onchange = e => { s[e.target.dataset.i] = e.target.checked; localStorage.gobag = JSON.stringify(s); };
 }
+const PAL = [['Forest','#1f5e3b','#2f8a57'],['Ocean','#1c4a8c','#3b7bd4'],['Royal','#5b2a8c','#8f5fd0'],['Crimson','#a02a2a','#e05050'],['Sunset','#b5521a','#ef8a3c'],['Teal','#0f6b6b','#25a8a8'],['Rose','#a8325e','#e0679a'],['Slate','#34495e','#5f7d99'],['Indigo','#2c3a9c','#5a6cf0'],['Olive','#5a6b1f','#8fa636']];
 function settings(el) {
-  el.innerHTML = '<h2>Settings</h2><div class="card"><h3>Text size</h3><input type="range" id="fs" min="14" max="22" value="' + (parseInt(localStorage.fs) || 16) + '"></div><div class="card" id="ac"><h3>Accent color</h3><div class="row" style="justify-content:flex-start">' + [['#1f5e3b','#2f8a57'],['#1c4a8c','#3b7bd4'],['#7a2a8c','#b45fd0'],['#b4391f','#e2623f']].map(c => `<button class="dot" data-a="${c}" style="background:linear-gradient(135deg,${c[0]},${c[1]})"></button>`).join('') + '</div></div>';
-  $('#fs').oninput = e => { localStorage.fs = e.target.value; applyPrefs(); };
-  $('#ac').onclick = e => { const b = e.target.closest('.dot'); if (b) { localStorage.acc = b.dataset.a; applyPrefs(); } };
+  const draw = () => {
+    const cur = localStorage.acc || '#1f5e3b,#2f8a57', vm = localStorage.vm || 'auto', dk = document.documentElement.dataset.theme === 'dark', B = (on, v, t) => `<button class="${on ? 'on' : ''}" data-v="${v}">${t}</button>`;
+    el.innerHTML = `<h2>Settings</h2>
+    <div class="card"><h3>Display mode</h3><p class="muted">Auto adapts to your screen. Desktop shows the full website layout. Phone shows the compact app layout.</p><div class="seg" id="vm">${B(vm === 'auto', 'auto', 'Auto') + B(vm === 'desktop', 'desktop', '🖥 Desktop') + B(vm === 'phone', 'phone', '📱 Phone')}</div></div>
+    <div class="card"><h3>Appearance</h3><div class="seg" id="th">${B(!dk, 'light', '☀️ Light') + B(dk, 'dark', '🌙 Dark')}</div></div>
+    <div class="card"><h3>Text size</h3><input type="range" id="fs" min="14" max="22" value="${parseInt(localStorage.fs) || 16}"></div>
+    <div class="card"><h3>Color theme</h3><div class="swatches" id="ac">${PAL.map(p => `<button class="sw ${cur === p[1] + ',' + p[2] ? 'on' : ''}" data-a="${p[1]},${p[2]}"><i style="background:linear-gradient(135deg,${p[1]},${p[2]})"></i>${p[0]}</button>`).join('')}</div></div>`;
+    $('#vm').onclick = e => { const b = e.target.closest('button'); if (b) { localStorage.vm = b.dataset.v; applyPrefs(); draw(); } };
+    $('#th').onclick = e => { const b = e.target.closest('button'); if (b) { document.documentElement.dataset.theme = localStorage.theme = b.dataset.v; draw(); } };
+    $('#fs').oninput = e => { localStorage.fs = e.target.value; applyPrefs(); };
+    $('#ac').onclick = e => { const b = e.target.closest('button'); if (b) { localStorage.acc = b.dataset.a; applyPrefs(); draw(); } };
+  };
+  draw();
 }
-function applyPrefs() { const r = document.documentElement.style, c = (localStorage.acc || '').split(','); r.fontSize = (parseInt(localStorage.fs) || 16) + 'px'; if (c[1]) { r.setProperty('--green', c[0]); r.setProperty('--green2', c[1]); } }
+function about(el) {
+  el.innerHTML = `<div class="hero"><small>About this app</small><h1>Barangay Mantulang</h1><p>Version 3.1 · Passi City, Iloilo</p></div>
+  <div class="card"><h3>What is this app?</h3><p>A community app that brings barangay services to residents' phones: announcements, certificate requests, complaints, emergency alerts, a live map, chat and more. Officials manage everything from one dashboard.</p></div>
+  <div class="card"><h3>Key features</h3><p>Certificates and Barangay ID · Complaints and blotter · SOS alerts · Live map · Chats and polls · Programs, jobs, ordinances and budget transparency · Digital ID · Installable and offline-ready.</p></div>
+  <div class="card dev"><span class="av">RF</span><div><small>DEVELOPER</small><h3>Ronel Sigaya Flores</h3><p>First Year College · BSIT<br>PHINMA University of Iloilo</p></div></div>
+  <p class="muted" style="text-align:center">Built with Firebase, Leaflet and OpenStreetMap.</p>`;
+}
+function applyPrefs() {
+  const r = document.documentElement, c = (localStorage.acc || '#1f5e3b,#2f8a57').split(','), vm = localStorage.vm || 'auto';
+  r.style.fontSize = (parseInt(localStorage.fs) || 16) + 'px'; r.style.setProperty('--green', c[0]); r.style.setProperty('--green2', c[1]); r.dataset.view = vm;
+  const mv = document.querySelector('meta[name=viewport]'); mv && (mv.content = vm === 'desktop' ? 'width=1100' : 'width=device-width, initial-scale=1');
+  const tc = document.querySelector('meta[name=theme-color]'); tc && (tc.content = c[0]);
+}
 applyPrefs();
+$('#vw').onclick = () => { const o = ['auto','desktop','phone']; localStorage.vm = o[(o.indexOf(localStorage.vm || 'auto') + 1) % 3]; applyPrefs(); toast('View: ' + localStorage.vm); };
 
 function live(col, mine, render) {
   unsub && unsub();
@@ -131,7 +155,7 @@ function live(col, mine, render) {
 function go(v) {
   document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v || (b.dataset.v === 'more' && !document.querySelector('#nav [data-v="' + v + '"]'))));
   const el = $('#view'); unsub && unsub(); el.innerHTML = '';
-  ({ more, myid, broadcast, backup, gobag, settings, home, hotlines, dash, sos, alerts, residents, profile, polls, notes, map: livemap, chat }[v] || (() => page(v, el)))(el);
+  ({ about, more, myid, broadcast, backup, gobag, settings, home, hotlines, dash, sos, alerts, residents, profile, polls, notes, map: livemap, chat }[v] || (() => page(v, el)))(el);
 }
 
 function printCert(r) {
@@ -338,7 +362,7 @@ function chat(el) {
 
 /* ---------- New: home, hotlines, CSV ---------- */
 function home(el) {
-  const h = new Date().getHours(), g = h < 12 ? 'Magandang umaga' : h < 18 ? 'Magandang hapon' : 'Magandang gabi';
+  const h = new Date().getHours(), g = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
   const Q = [['sos','🆘','SOS'],['requests','📄','Certificate'],['complaints','📝','Complaint'],['chat','💬','Chat'],['map','🗺️','Live map'],['hotlines','☎️','Hotlines']];
   el.innerHTML = `<div class="hero"><small>${g},</small><h1>${esc(me.name.split(' ')[0])} 👋</h1><div class="wx" id="wx">Loading weather…</div><span class="badge ${me.verified ? 'Approved' : 'Pending'}">${me.verified ? '✔ Verified resident' : 'Not yet verified'}</span></div>
   <div class="quick">${Q.map(q => `<button data-v="${q[0]}"><em>${q[1]}</em>${q[2]}</button>`).join('')}</div><h3 class="sec">Latest announcements</h3><div id="list"></div>`;

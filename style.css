@@ -126,3 +126,32 @@ body::after{background:#e8b23a;bottom:-26vmax;right:-16vmax;animation-delay:-9s}
 .dot{width:46px;height:46px;border-radius:50%;border:3px solid #fff;box-shadow:0 4px 12px #0004;cursor:pointer}.dot:active{transform:scale(.9)}
 input[type=range]{padding:0;accent-color:var(--green2)}
 input[type=file]{padding:10px}
+
+/* ---- ultra v4: themes, views, about ---- */
+body::before{background:var(--green2)}
+.side{background:linear-gradient(185deg,color-mix(in srgb,var(--green) 88%,#000),color-mix(in srgb,var(--green) 42%,#000))}
+.auth-art{background:linear-gradient(160deg,var(--green),color-mix(in srgb,var(--green) 55%,#000))}
+.hero,.idcard{background:linear-gradient(135deg,var(--green),var(--green2) 60%,var(--gold))}
+.foot{font-size:.78rem;margin-top:10px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}.seg button{flex:1;border:1.5px solid #8884;background:none;color:var(--ink);border-radius:10px;padding:10px;cursor:pointer;font-weight:600}
+.seg button.on{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;border-color:transparent}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:10px}
+.sw{border:2px solid transparent;background:none;color:var(--ink);border-radius:14px;padding:8px 4px;cursor:pointer;font-size:.8rem;font-weight:600;transition:transform .2s}
+.sw i{display:block;height:44px;border-radius:10px;margin-bottom:6px;box-shadow:0 4px 12px #0003}.sw:hover{transform:translateY(-3px)}
+.sw.on{border-color:var(--green2);box-shadow:0 0 0 3px #8883}
+.dev{display:flex;gap:16px;align-items:center}.dev small{letter-spacing:2px;color:var(--mut)}
+.av{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:1.3rem;color:#2b2000;background:linear-gradient(135deg,#f4c95d,var(--gold));flex:none}
+@media(min-width:1000px){
+ .view{max-width:1100px}
+ #list{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;align-items:start}#list .card{margin:0}
+}
+html[data-view=phone] body{max-width:430px;margin:0 auto;min-height:100vh;box-shadow:0 0 0 1px #8884,0 30px 80px #0006}
+html[data-view=phone] .auth{grid-template-columns:1fr}html[data-view=phone] .auth-art{padding:8vh 8%}
+html[data-view=phone] .app{grid-template-columns:1fr;padding-bottom:92px}
+html[data-view=phone] .side{position:fixed;top:auto;bottom:10px;left:50%;right:auto;width:min(410px,calc(100% - 20px));transform:translateX(-50%);height:auto;flex-direction:row;padding:6px;border-radius:22px;z-index:5;box-shadow:0 12px 34px #0a2a1466}
+html[data-view=phone] .brand,html[data-view=phone] .who{display:none}
+html[data-view=phone] #nav{flex-direction:row;overflow-x:auto;gap:2px;scrollbar-width:none}
+html[data-view=phone] #nav button{flex-direction:column;gap:0;min-width:68px;font-size:.66rem;padding:7px 6px;align-items:center;white-space:nowrap}
+html[data-view=phone] #nav button em{font-size:1.3rem}
+html[data-view=phone] .view{padding:20px 16px}html[data-view=phone] #list{display:block}
+html[data-view=phone] .fab{bottom:96px;right:max(16px,calc(50% - 199px))}html[data-view=phone] .toast{bottom:100px}
