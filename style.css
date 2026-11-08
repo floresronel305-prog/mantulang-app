@@ -206,3 +206,41 @@ html[data-view=phone] #nav button{flex:0 0 66px;min-width:0;overflow:hidden}
 html[data-view=phone] #nav button span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 html[data-view=phone] .hero h1{font-size:1.7rem}
 html[data-view=phone] body{overflow-x:hidden}
+
+/* ---- v7: ultra splash + UI polish ---- */
+.lgu{position:relative}
+#splash{overflow:hidden;transition:none;background:radial-gradient(circle at 50% 40%,#1e6fe0,#0b3d91 55%,#041a42);will-change:clip-path}
+#splash.out{opacity:1;transform:none;pointer-events:none;animation:irisOut 1s cubic-bezier(.7,0,.2,1) forwards}
+#splash.out .sp-wrap{animation:wrapOut .7s cubic-bezier(.6,0,.4,1) forwards}
+@keyframes irisOut{from{clip-path:circle(150% at 50% 42%)}to{clip-path:circle(0% at 50% 42%)}}
+@keyframes wrapOut{to{transform:scale(.7);opacity:0}}
+.sp-aurora{position:absolute;inset:-35%;background:radial-gradient(circle 70vmin at 30% 30%,#3b8cff,transparent),radial-gradient(circle 70vmin at 72% 68%,#7cc4ffaa,transparent);animation:spin 16s linear infinite;opacity:.8}
+.sp-parts{position:absolute;inset:0;overflow:hidden}
+.sp-parts i{position:absolute;bottom:-12px;border-radius:50%;background:#ffffffb0;animation:floatUp linear infinite}
+@keyframes floatUp{from{transform:translateY(0);opacity:0}15%{opacity:1}to{transform:translateY(-105vh);opacity:0}}
+.sp-wrap{z-index:1}
+.sp-logo{position:relative;display:grid;place-items:center;width:190px;height:190px}
+.sp-ring{top:50%;left:50%;margin:-85px 0 0 -85px}
+#splash .lgu{width:170px;height:170px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 6px #ffffff33,0 20px 50px #0008;animation:logoIn2 1.4s cubic-bezier(.2,.9,.2,1) both,bobLogo 3.2s 1.4s ease-in-out infinite}
+#splash .lgu::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,#ffffffaa 50%,transparent 65%);transform:translateX(-130%);animation:shine 1.3s 1.3s ease-in-out forwards}
+@keyframes logoIn2{0%{transform:scale(.15) rotate(-140deg);opacity:0;filter:blur(10px)}55%{opacity:1;filter:blur(0)}80%{transform:scale(1.07) rotate(6deg)}100%{transform:none;opacity:1}}
+@keyframes bobLogo{50%{transform:translateY(-7px)}}
+@keyframes shine{to{transform:translateX(130%)}}
+.sp-k{font-size:.8rem;letter-spacing:9px;opacity:0;animation:rise .8s .8s both;margin-top:6px}
+.sp-name{display:flex;gap:3px;overflow:hidden;padding:2px 6px 8px;font-size:2.2rem;font-weight:800;letter-spacing:3px;line-height:1.2;margin:0}
+.sp-name span{display:inline-block;transform:translateY(120%);animation:letter .8s cubic-bezier(.2,.9,.2,1) forwards;text-shadow:0 4px 18px #7cc4ff88}
+@keyframes letter{to{transform:none}}
+.sp-s{animation:rise .8s 1.7s both}.sp-bar{animation:rise .6s 1.8s both}.sp-bar i{animation-duration:2.6s;animation-delay:.7s}
+.sp-skip{opacity:0;animation:rise .6s 2.2s both;opacity:.6}
+/* dark-mode contrast + polish */
+body::after{background:var(--gold);opacity:.28}
+[data-theme=dark] .view h2{background:linear-gradient(90deg,#fff,var(--gold));-webkit-background-clip:text;background-clip:text}
+.hero{background-size:200% 200%;animation:rise .6s both,flow 9s ease-in-out infinite alternate}@keyframes flow{to{background-position:100% 50%}}
+.quick em{width:54px;height:54px;border-radius:18px;display:grid;place-items:center;margin:0 auto 8px;background:color-mix(in srgb,var(--green2) 16%,transparent);font-size:1.7rem;transition:transform .35s cubic-bezier(.3,1.6,.5,1)}
+.quick button:hover em{transform:scale(1.12) rotate(-6deg)}
+.quick button:nth-child(2){animation-delay:.06s}.quick button:nth-child(3){animation-delay:.12s}.quick button:nth-child(4){animation-delay:.18s}.quick button:nth-child(5){animation-delay:.24s}.quick button:nth-child(6){animation-delay:.3s}.quick button:nth-child(n+7){animation-delay:.36s}
+.card{border-left:4px solid transparent}.card:hover{border-left-color:var(--gold)}
+#nav button.on em{filter:drop-shadow(0 4px 6px #0b3d9166)}
+.rip{position:absolute;border-radius:50%;background:currentColor;opacity:.25;transform:scale(0);animation:rip .65s ease-out forwards;pointer-events:none}
+@keyframes rip{to{transform:scale(2.6);opacity:0}}
+html[data-view=phone] .top{backdrop-filter:blur(14px)}

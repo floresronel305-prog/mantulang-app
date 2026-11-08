@@ -141,6 +141,7 @@ function about(el) {
 function applyPrefs() {
   const r = document.documentElement, c = (localStorage.acc2 || '#0b3d91,#1e6fe0').split(','), vm = localStorage.vm || 'auto';
   r.style.fontSize = (parseInt(localStorage.fs) || 16) + 'px'; r.style.setProperty('--green', c[0]); r.style.setProperty('--green2', c[1]); r.dataset.view = vm === 'auto' ? (innerWidth <= 760 || (matchMedia('(pointer:coarse)').matches && screen.width <= 820) ? 'phone' : 'desktop') : vm;
+  r.style.zoom = ''; const kz = r.dataset.view === 'phone' && matchMedia('(pointer:coarse)').matches && screen.width <= 820 ? innerWidth / screen.width : 1; if (kz > 1.3) r.style.zoom = kz;
   const mv = document.querySelector('meta[name=viewport]'); mv && (mv.content = vm === 'desktop' ? 'width=1100' : 'width=device-width, initial-scale=1');
   const tc = document.querySelector('meta[name=theme-color]'); tc && (tc.content = c[0]);
 }
@@ -401,3 +402,12 @@ bindInstall();
 $('#sheetX').onclick = () => $('#sheet').hidden = true;
 const net = () => $('#off').hidden = navigator.onLine; addEventListener('online', net); addEventListener('offline', net); net();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+
+/* ---------- Ripple micro-interaction ---------- */
+document.addEventListener('pointerdown', e => {
+  const t = e.target.closest('.btn,.quick button,#nav button,.sw,.seg button,.top-out'); if (!t) return;
+  const r = t.getBoundingClientRect(), s = Math.max(r.width, r.height), d = document.createElement('i');
+  d.className = 'rip'; d.style.cssText = `width:${s}px;height:${s}px;left:${e.clientX - r.left - s / 2}px;top:${e.clientY - r.top - s / 2}px`;
+  if (getComputedStyle(t).position === 'static') t.style.position = 'relative'; t.style.overflow = 'hidden';
+  t.appendChild(d); d.onanimationend = () => d.remove();
+});
