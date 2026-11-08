@@ -1,3 +1,4 @@
+import { AI_URL } from "./ai-config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -70,46 +71,76 @@ $('#swacc').onclick = $('#tsw').onclick = () => { localStorage.mt_sw = '1'; $('#
 document.addEventListener('click', e => { const g = e.target.closest('[data-go]'); g && $('#view').contains(g) && go(g.dataset.go); });
 document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-go]')) { e.preventDefault(); go(e.target.dataset.go); } });
 /* ---- Mantulang Assistant: answers come from the app's own service guide (DESC/NAME) ---- */
-const AI_URL = ''; // optional: your own backend endpoint for a real AI model (see README). Never put an API key here.
-const KW = { requests:'certificate clearance indigency residency business permit sertipiko papel', complaints:'complaint reklamo blotter away gulo', events:'event activity kaganapan okasyon', lostfound:'lost found nawala nakita wallet cellphone', programs:'program serbisyo benepisyo', jobs:'job trabaho hanapbuhay employment', ordinances:'ordinance resolution batas ordinansa', budget:'budget pondo gastos proyekto transparency pera', evac:'evacuation evacuate bagyo baha typhoon flood center', health:'health vaccine bakuna kalusugan clinic', garbage:'garbage basura waste koleksyon trash', relief:'relief ayuda goods pagkain', reports:'report sira ilaw kalsada drainage streetlight problema', idapps:'barangay id apply', appointments:'appointment schedule mediation konsulta', suggestions:'suggestion mungkahi opinion', registry:'senior pwd solo parent 4ps registry', volunteers:'volunteer boluntaryo tumulong', polls:'poll survey boto vote', households:'household pamilya sambahayan', map:'map mapa location lokasyon', officials:'official kapitan kagawad directory contact numero opisyal', hotlines:'hotline hotlines 911 numero tawag', myid:'digital qr', gobag:'gobag go-bag bag checklist', settings:'settings theme dark kulay font', profile:'profile account pangalan purok mobile', chat:'chat message mensahe', notes:'notification abiso', announcements:'announcement anunsyo balita advisory', residents:'resident residente verify beripika', broadcast:'broadcast announce lahat', backup:'backup download data', alerts:'alert alerts', dash:'dashboard statistics bilang' };
+const aiHist = [];
+const KW = { requests:'certificate clearance indigency residency business permit sertipiko papel request requests status', complaints:'complaint reklamo blotter away gulo', events:'event activity kaganapan okasyon', lostfound:'lost found nawala nakita wallet cellphone', programs:'program serbisyo benepisyo', jobs:'job trabaho hanapbuhay employment', ordinances:'ordinance resolution batas ordinansa', budget:'budget pondo gastos proyekto transparency pera', evac:'evacuation evacuate bagyo baha typhoon flood center', health:'health vaccine bakuna kalusugan clinic', garbage:'garbage basura waste koleksyon trash', relief:'relief ayuda goods pagkain', reports:'report sira ilaw kalsada drainage streetlight problema', idapps:'barangay id apply', appointments:'appointment schedule mediation konsulta', suggestions:'suggestion mungkahi opinion', registry:'senior pwd solo parent 4ps registry', volunteers:'volunteer boluntaryo tumulong', polls:'poll survey boto vote', households:'household pamilya sambahayan', map:'map mapa location lokasyon', officials:'official kapitan kagawad directory contact numero opisyal', hotlines:'hotline hotlines 911 numero tawag', myid:'digital qr', gobag:'gobag go-bag bag checklist', settings:'settings theme dark kulay font', profile:'profile account pangalan purok mobile', chat:'chat message mensahe', notes:'notification abiso', announcements:'announcement anunsyo balita advisory', residents:'resident residente verify beripika', broadcast:'broadcast announce lahat', backup:'backup download data', alerts:'alert alerts', dash:'dashboard statistics bilang' };
 const LBL = { requests:'Certificates', sos:'Emergency (SOS)', chat:'Chats', notes:'Notifications', announcements:'Announcements', alerts:'Emergency alerts', dash:'Dashboard', more:'All services' };
 const lbl = k => NAME[k] || FORMS[k]?.title || LBL[k] || k;
 const STOP = new Set(['ang', 'mga', 'ako', 'paano', 'how', 'the', 'and', 'for', 'you', 'can', 'mag', 'ano', 'saan', 'may', 'gusto', 'nais', 'pwede', 'pano', 'kung', 'yung', 'ito', 'what', 'where', 'are', 'nang', 'ba', 'po']);
 const AIQ = ['Mag-request ng certificate', 'Mag-file ng reklamo', 'Emergency hotlines', 'Schedule ng basura', 'Evacuation center'];
 function aiMsg(t, who, keys) {
   const m = $('#aim'), d = document.createElement('div'); d.className = 'ab ' + who;
-  if (who === 'me') d.textContent = t; else d.innerHTML = esc(t).replace(/\n/g, '<br>') + (keys && keys.length ? '<div class="abk">' + keys.map(k => `<button type="button" data-k="${k}">${IC[k] || '•'} ${esc(lbl(k))}</button>`).join('') + '</div>' : '');
+  if (who === 'me') d.textContent = t; else d.innerHTML = esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>') + (keys && keys.length ? '<div class="abk">' + keys.map(k => `<button type="button" data-k="${k}">${IC[k] || '•'} ${esc(lbl(k))}</button>`).join('') + '</div>' : '');
   m.append(d); m.scrollTop = m.scrollHeight; return d;
 }
-function aiLocal(q) {
+const AI_PUB = ['announcements', 'events', 'officials', 'programs', 'jobs', 'ordinances', 'budget', 'evac', 'health', 'garbage', 'relief', 'lostfound', 'polls'], AI_OWN = ['requests', 'complaints', 'reports', 'idapps', 'appointments'];
+const AI_KB = [
+  [/(install|i-install|home screen|add to home)/, 'Para i-install ang app: pindutin ang "Install app" kung lumabas ito, o sa browser menu (⋮) piliin ang "Add to Home screen". Parang ordinaryong app na ito pagkatapos.', ['settings']],
+  [/(offline|walang internet|walang signal|no internet)/, 'Gumagana nang bahagya ang app kahit offline: makikita ang mga na-save na datos at may lalabas na "Offline" bar sa taas. Kailangan pa rin ng internet para magpadala ng request, reklamo o SOS.', []],
+  [/(notification|push|abiso|bell)/, 'Makikita ang mga abiso sa Notifications (hal. kapag na-approve ang request mo). Wala pang push notification kapag nakasara ang app, kaya buksan ito paminsan-minsan.', ['notes']],
+  [/(dark|madilim|theme|kulay|font|laki ng letra|text size)/, 'Pwede mong palitan ang display mode, theme, laki ng letra at kulay sa Settings. Makikita rin ang "Dark / light" sa menu. Nase-save ang mga ito sa device mo lamang.', ['settings']],
+  [/(share.*location|lokasyon ko|location ko|saan ako|live map)/, 'Sa Live map, pindutin ang "Share my location" para makita ng mga opisyal ang lokasyon mo. Ikaw ang pumipili kung ibabahagi ito, at pwede mong itigil anumang oras.', ['map']],
+  [/(sign out|log out|mag-logout|logout|switch account|ibang account|palit.*account)/, 'Para mag-sign out o magpalit ng account, pindutin ang "Switch account" (⇄ sa taas sa phone, o sa menu sa kaliwa). May listahan ng mga account na ginamit mo na sa device na ito. Awtomatiko ka ring masa-sign out kung matagal na walang gamit.', []],
+  [/(role|resident ba|official ba|sino.*admin|paano.*admin|maging admin)/, 'Resident ang bawat bagong account. Ang mga opisyal (kapitan, kagawad, atbp.) ay may Dashboard at kakayahang mag-verify, mag-publish at mag-broadcast. Ang residente lang ang pwedeng gawing official sa pamamagitan ng ibang opisyal, sa Residents > Make official.', ['residents']],
+  [/(ano.*(kaya|magagawa|alam) mo|what can you|ano ang magagawa)/, 'Kaya kong sagutin ang tungkol sa lahat ng serbisyo sa app: certificate, reklamo, ulat ng problema, basura, evacuation center, hotlines, ID, events, trabaho, ayuda at iba pa. Nababasa ko rin ang kasalukuyang laman nito (announcements, events, direktoryo) at ang status ng sarili mong request at reklamo.', []]
+];
+async function aiData(k) {
+  const F = FORMS[k] || (k === 'polls' ? { head: r => r.title, text: r => (Array.isArray(r.options) ? r.options.map(o => typeof o === 'string' ? o : (o.t || o.text || o.label || o.name || '')).join(', ') : '') } : null);
+  if (!F || !F.head) return '';
+  let q; if (AI_PUB.includes(k)) q = collection(db, k); else if (AI_OWN.includes(k)) q = me.role === 'official' ? collection(db, k) : query(collection(db, k), where('uid', '==', me.uid)); else return '';
+  const rows = (await getDocs(q)).docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)).slice(0, 5);
+  if (!rows.length) return AI_OWN.includes(k) && me.role !== 'official' ? 'Wala ka pang naipapasok dito.' : 'Wala pang nakalistang item dito.';
+  return rows.map(r => { try { return '• ' + String(F.head(r)) + (r.date ? ' (' + r.date + ')' : '') + (F.text ? ' — ' + String(F.text(r) || '').slice(0, 140) : '') + (r.status ? ' [' + r.status + ']' : ''); } catch (_) { return ''; } }).filter(Boolean).join('\n');
+}
+async function aiLocal(q) {
   const off = me.role === 'official', t = q.toLowerCase(), first = (me.name || '').split(' ')[0];
   if (/^(hi|hello|hey|kumusta|kamusta|musta|magandang|good (morning|afternoon|evening))\b/.test(t)) return { t: `Kumusta, ${first}! Ako ang Mantulang Assistant. Itanong mo kung paano mag-request ng certificate, mag-report ng problema, o saan makikita ang isang serbisyo.`, k: [] };
   if (/\b(salamat|thanks|thank you)\b/.test(t)) return { t: 'Walang anuman! May iba ka pa bang gustong itanong?', k: [] };
   if (/\b(sos|saklolo|sunog|fire|ambulansya|ambulance|holdap|tulungan)\b|emergency/.test(t)) return { t: 'Kung nasa panganib ka, tumawag agad sa 911. Pagkatapos, pindutin ang SOS para maabisuhan ang mga opisyal ng barangay (nakikita lang nila ito kapag bukas ang app nila), at tawagan din ang hotline ng barangay.', k: ['sos', 'hotlines'] };
-  if (/(verify|verified|beripika|bakit.*(hindi|ayaw).*(request|certificate))/.test(t)) return off ? { t: 'Pumunta sa Residents at i-verify ang residente pagkatapos suriin ang valid ID niya.', k: ['residents'] } : { t: 'Kailangang verified ang account para makapag-request ng certificate. Ang barangay official ang nagve-verify pagkatapos suriin ang valid ID mo, kaya makipag-ugnayan sa barangay hall kung hindi pa verified ang account mo.', k: ['profile', 'officials'] };
+  if (/(verify|verified|beripika|bakit.*(hindi|ayaw).*(request|certificate))/.test(t)) return off ? { t: 'Pumunta sa Residents at i-verify ang residente pagkatapos suriin ang valid ID niya.', k: ['residents'] } : { t: me.verified ? 'Verified na ang account mo, kaya pwede kang mag-request ng certificate.' : 'Kailangang verified ang account para makapag-request ng certificate. Ang barangay official ang nagve-verify pagkatapos suriin ang valid ID mo, kaya makipag-ugnayan sa barangay hall kung hindi pa verified ang account mo.', k: ['profile', 'officials'] };
   if (/(password|nakalimutan|forgot)/.test(t)) return { t: 'Sa login screen, pindutin ang "Forgot password?" at ilagay ang email mo para makakuha ng reset link. Kung username lang ang gamit mo, pumunta sa barangay hall para sa tulong.', k: [] };
   if (/(sino.*gumawa|who made|developer|gumawa nito)/.test(t)) return { t: 'Binuo ang app na ito ni Ronel Sigaya Flores, BSIT, PHINMA University of Iloilo.', k: ['about'] };
   if (/(privacy|datos|data ko|ligtas ba)/.test(t)) return { t: 'Ginagamit lamang ang datos mo sa mga serbisyo ng barangay (RA 10173). Nakikita ito ng ikaw at ng mga awtorisadong opisyal lamang, at hindi ibinebenta o ibinabahagi. Para tingnan, ituwid o burahin ang datos mo, lumapit sa barangay hall.', k: ['profile'] };
+  for (const [re, txt, kk] of AI_KB) if (re.test(t)) return { t: txt, k: kk };
+  if (!off && /(verified ba|status ng account|account ko|profile ko|purok ko)/.test(t)) return { t: `Account mo: ${me.name}${me.purok ? ', ' + me.purok : ''}. ${me.verified ? 'Verified ka na, kaya pwede kang mag-request ng certificate.' : 'Hindi ka pa verified. Makipag-ugnayan sa barangay hall para ma-verify.'}`, k: ['profile', 'myid'] };
+  if (off && /(ilan|how many|bilang|total|count|statistics)/.test(t)) { try { const [u, r, c, a] = await Promise.all(['users', 'requests', 'complaints', 'alerts'].map(x => getDocs(collection(db, x)))); const pr = r.docs.filter(d => d.data().status === 'Pending').length, oc = c.docs.filter(d => d.data().status !== 'Resolved').length; return { t: `Residente: ${u.docs.filter(d => d.data().role === 'resident').length}\nRequests: ${r.size} (Pending: ${pr})\nReklamo: ${c.size} (Bukas: ${oc})\nEmergency alerts: ${a.size}`, k: ['dash'] }; } catch (_) { } }
   const W = t.replace(/[^a-z0-9ñ\- ]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !STOP.has(w));
   const keys = Object.keys(KW).filter(k => off || !['residents', 'broadcast', 'backup', 'alerts', 'dash'].includes(k));
   const sc = keys.map(k => { const kw = KW[k].split(' '), d = (DESC[k]?.[0] || '').toLowerCase(); let s = 0; W.forEach(w => { if (kw.some(x => x === w || (w.length > 3 && (x.startsWith(w) || w.startsWith(x))))) s += 3; else if (d.includes(w)) s += 1; }); return [k, s]; }).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 3);
-  if (!sc.length) return { t: 'Hindi ko pa sigurado ang sagot diyan. Subukang hanapin sa All services, o makipag-ugnayan sa barangay hall. Pwede mo ring itanong ang tungkol sa certificate, reklamo, basura, evacuation center o hotlines.', k: ['more', 'officials'] };
+  if (!sc.length) return { t: 'Hindi ko pa sigurado ang sagot diyan. Subukang hanapin sa All services, o makipag-ugnayan sa barangay hall. Pwede mo ring itanong ang tungkol sa certificate, reklamo, basura, evacuation center o hotlines.', k: ['more', 'officials'], f: 1 };
   const k = sc[0][0], d = DESC[k];
-  return { t: d ? `${lbl(k)}: ${d[0]}\n${(off && d[2]) || d[1] || ''}` : `Makikita mo ito sa ${lbl(k)}.`, k: sc.map(x => x[0]) };
+  let live = ''; try { live = await aiData(k); } catch (_) { }
+  return { t: (d ? `${lbl(k)}: ${d[0]}\n${(off && d[2]) || d[1] || ''}` : `Makikita mo ito sa ${lbl(k)}.`) + (live ? '\n\nKasalukuyan:\n' + live : ''), k: sc.map(x => x[0]) };
 }
 async function aiAsk(q) {
   q = q.trim(); if (!q) return; aiMsg(q, 'me'); $('#aiq').value = '';
   const ty = document.createElement('div'); ty.className = 'ab bot typ'; ty.innerHTML = '<i></i><i></i><i></i>'; $('#aim').append(ty); $('#aim').scrollTop = 9e9;
-  let r = aiLocal(q);
-  if (AI_URL) { try { const c = new AbortController(); setTimeout(() => c.abort(), 12000); const x = await fetch(AI_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: q, context: r.t, role: me.role }), signal: c.signal }); const j = await x.json(); if (j.reply) r = { t: String(j.reply).slice(0, 1500), k: r.k }; } catch (_) { } }
-  else await new Promise(s => setTimeout(s, 450));
+  let r; try { r = await aiLocal(q); } catch (_) { r = { t: 'Pasensya na, may problema sa pagkuha ng sagot. Subukan ulit o buksan ang All services.', k: ['more'] }; }
+  if (AI_URL) {
+    try {
+      const c = new AbortController(), tm = setTimeout(() => c.abort(), 60000), tk = await auth.currentUser.getIdToken();
+      const x = await fetch(AI_URL.replace(/\/$/, '') + '/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk }, body: JSON.stringify({ messages: [...aiHist, { role: 'user', content: q }], context: r.t, name: me.name, role: me.role }), signal: c.signal });
+      clearTimeout(tm); const j = await x.json().catch(() => ({}));
+      if (x.ok && j.reply) { aiHist.push({ role: 'user', content: q }, { role: 'assistant', content: j.reply }); aiHist.splice(0, Math.max(0, aiHist.length - 10)); r = { t: String(j.reply).slice(0, 2500), k: r.f ? [] : r.k }; }
+      else if (x.status === 429) r = { t: 'Marami nang tanong sa maikling panahon. Subukan ulit pagkalipas ng ilang minuto.', k: [] };
+    } catch (_) { }
+  } else await new Promise(s => setTimeout(s, 450));
   ty.remove(); aiMsg(r.t, 'bot', r.k);
 }
 function aiOpen(o) {
   $('#aip').hidden = !o; $('#aib').hidden = !!o || !me;
   if (o) { if (!$('#aim').children.length) { aiMsg(`Kumusta, ${me.name.split(' ')[0]}! Ako ang Mantulang Assistant. Ano ang maitutulong ko?`, 'bot'); $('#aic').innerHTML = AIQ.map(x => `<button type="button" data-q="${x}">${x}</button>`).join(''); } if (innerWidth > 760) $('#aiq').focus(); }
 }
-function aiReset() { $('#aib').hidden = true; $('#aip').hidden = true; $('#aim').innerHTML = ''; }
+function aiReset() { aiHist.length = 0; $('#aib').hidden = true; $('#aip').hidden = true; $('#aim').innerHTML = ''; }
 $('#aib').onclick = () => aiOpen(1); $('#aix').onclick = () => aiOpen(0);
 $('#aif').onsubmit = e => { e.preventDefault(); aiAsk($('#aiq').value); };
 $('#aic').onclick = e => { const b = e.target.closest('[data-q]'); b && aiAsk(b.dataset.q); };

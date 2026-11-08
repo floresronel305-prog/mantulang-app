@@ -22,5 +22,10 @@ Upload ALL files to the root of the GitHub repo (replace same names).
 KNOWN LIMITS: poll votes are technically readable by signed-in users; no push notifications when the app is closed.
 
 AI ASSISTANT (v4.1)
- - The Assistant button (bottom-right) answers from the app's own service guide, in Filipino or English. It works offline and costs nothing.
+ - The Assistant button (bottom-right) answers from the app's own service guide AND the live data it may read (announcements, events, directory, programs, your own requests and complaints), in Filipino or English. It works offline and costs nothing.
  - To connect a real AI model later: build a small server (e.g. on Render) that holds the AI API key as a secret, accepts POST {question, context, role} and returns {reply}. Then put its URL in AI_URL at the top of the assistant section of app.js. NEVER put an API key in app.js or anywhere in this public repo.
+
+REAL AI (ChatGPT-style)
+ 1) Create an AI key at console.anthropic.com (billed separately per use). 2) Upload the ai-server folder to GitHub. 3) On render.com: New > Web Service > this repo, Root Directory = ai-server, Build = npm install, Start = npm start.
+ 4) Environment variables on Render: ANTHROPIC_API_KEY, FIREBASE_API_KEY (the apiKey in firebase-config.js), ALLOWED_ORIGIN (your site URL, no trailing slash).
+ 5) Put the Render URL inside ai-config.js. Never put the AI key in the repo. Only signed-in users can use it (20 questions per 10 minutes each).
