@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Barangay Mantulang, Passi City</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<section id="auth" class="auth">
+  <div class="auth-art"><h1>Barangay<br>Mantulang</h1><p>Passi City, Iloilo<br>Serbisyo publiko, mas malapit sa inyo.</p></div>
+  <form id="authForm" class="auth-box">
+    <h2 id="authTitle">Sign in</h2>
+    <div id="regFields" hidden>
+      <input name="name" placeholder="Full name">
+      <input name="purok" placeholder="Purok / Sitio">
+    </div>
+    <input name="email" type="email" placeholder="Email" required>
+    <input name="password" type="password" placeholder="Password (6+ characters)" minlength="6" required>
+    <button class="btn" id="authBtn">Sign in</button>
+    <p class="muted"><a href="#" id="authSwap">Create a resident account</a></p>
+  </form>
+</section>
+
+<div id="app" class="app" hidden>
+  <aside class="side">
+    <div class="brand">Mantulang</div>
+    <nav id="nav"></nav>
+    <div class="who"><b id="whoName"></b><span id="whoRole"></span><button class="link" id="theme">Dark / light</button><button class="link" id="logout">Sign out</button></div>
+  </aside>
+  <main id="view" class="view"></main>
+</div>
+<div id="toast" class="toast"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

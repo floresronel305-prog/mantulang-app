@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function isOfficial() { return signedIn() && me().role == 'official'; }
+    function isVerified() { return signedIn() && me().get('verified', false) == true; }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isOfficial());
+      allow create: if request.auth.uid == uid && request.resource.data.role == 'resident' && request.resource.data.verified == false;
+      allow update: if isOfficial() || (request.auth.uid == uid && request.resource.data.role == resource.data.role && request.resource.data.get('verified', false) == resource.data.get('verified', false));
+    }
+    match /votes/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid && id == request.resource.data.pollId + '_' + request.auth.uid;
+    }
+    match /notifications/{id} {
+      allow read: if signedIn() && resource.data.to == request.auth.uid;
+      allow update: if signedIn() && resource.data.to == request.auth.uid && request.resource.data.to == resource.data.to;
+      allow create: if isOfficial();
+    }
+    match /{col}/{id} {
+      allow read: if signedIn() && (col in ['announcements','events','officials','polls','lostfound'] || isOfficial() || resource.data.uid == request.auth.uid);
+      allow write: if isOfficial() && (col in ['announcements','events','officials','polls','lostfound']);
+      allow create: if signedIn() && (col in ['complaints','alerts','households','lostfound'] || (col == 'requests' && isVerified())) && request.resource.data.uid == request.auth.uid;
+      allow delete: if signedIn() && col == 'lostfound' && resource.data.uid == request.auth.uid;
+      allow update: if isOfficial() && (col in ['requests','complaints']);
+    }
+  }
+}
