@@ -1,9 +1,9 @@
-BARANGAY MANTULANG APP - ULTRA (isang folder, walang subfolder)
+BARANGAY MANTULANG APP - ULTRA v3 (isang folder, walang subfolder)
 I-upload LAHAT ng files sa root ng GitHub repo; palitan ang may parehong pangalan.
 
-ADMIN: username = admin   password = Admin@Mantulang2026   (palitan mo mamaya)
-1) Sa app: Create a resident account > Full name: Barangay Captain, Username: admin, Password sa itaas.
+ADMIN SETUP (huwag ilagay ang password dito, public ang repo):
+1) Sa app: Create a resident account > Username: admin (o kahit ano), gumawa ng matibay na password.
 2) Firebase > Firestore > Data > users > (admin user) > role: resident -> official.
-3) I-refresh ang app.
+3) I-refresh ang app. Ang mga susunod na officials: Residents > Make official.
 
-Firestore rules: i-publish ulit ang firestore.rules (may bagong locations at messages).
+Firestore rules: i-publish ulit ang firestore.rules (may mga bagong collections).

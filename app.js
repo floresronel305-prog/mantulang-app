@@ -45,15 +45,15 @@ async function boot(u) {
   $('#auth').hidden = true; $('#app').hidden = false;
   $('#whoName').textContent = me.name; setRole();
   const nav = me.role === 'official'
-    ? [['dash','Dashboard'],['announcements','Announcements'],['events','Events'],['lostfound','Lost & found'],['requests','Requests'],['complaints','Complaints'],['alerts','Emergency alerts'],['map','Live map'],['chat','Chats'],['residents','Residents'],['households','Households'],['polls','Polls'],['officials','Directory'],['hotlines','Hotlines'],['profile','My profile']]
-    : [['home','Home'],['announcements','Announcements'],['events','Events'],['lostfound','Lost & found'],['requests','Certificates'],['complaints','Complaints'],['sos','Emergency'],['map','Live map'],['chat','Chats'],['households','My household'],['polls','Polls'],['notes','Notifications'],['officials','Officials'],['hotlines','Hotlines'],['profile','My profile']];
+    ? [['dash','Dashboard'],['announcements','Announcements'],['requests','Requests'],['complaints','Complaints'],['alerts','Emergency alerts'],['map','Live map'],['chat','Chats'],['more','All services']]
+    : [['home','Home'],['announcements','Announcements'],['requests','Certificates'],['sos','Emergency'],['chat','Chats'],['notes','Notifications'],['more','All services']];
   $('#nav').innerHTML = nav.map(n => `<button data-v="${n[0]}"><em>${IC[n[0]] || '•'}</em><span>${n[1]}</span></button>`).join('');
   $('#nav').onclick = e => { const b = e.target.closest('button'); b && go(b.dataset.v); };
   watchNotes(); go(nav[0][0]);
 }
 
 /* ---------- Views ---------- */
-const IC = {home:'🏠',dash:'📊',announcements:'📢',events:'📅',lostfound:'🔎',requests:'📄',complaints:'📝',alerts:'🚨',sos:'🆘',map:'🗺️',chat:'💬',residents:'👥',households:'🏘️',polls:'🗳️',notes:'🔔',officials:'🏛️',hotlines:'☎️',profile:'👤'};
+const IC = {more:'🧩',programs:'🎯',jobs:'💼',ordinances:'⚖️',budget:'💰',evac:'🏫',health:'💉',garbage:'🗑️',relief:'📦',reports:'🛠️',idapps:'🪪',appointments:'🗓️',suggestions:'💡',registry:'♿',volunteers:'🙋',myid:'🆔',broadcast:'📣',backup:'💾',gobag:'🎒',settings:'⚙️',home:'🏠',dash:'📊',announcements:'📢',events:'📅',lostfound:'🔎',requests:'📄',complaints:'📝',alerts:'🚨',sos:'🆘',map:'🗺️',chat:'💬',residents:'👥',households:'🏘️',polls:'🗳️',notes:'🔔',officials:'🏛️',hotlines:'☎️',profile:'👤'};
 const FORMS = {
   lostfound: { title:'Lost & found', post:'any', fields:'<select name="kind"><option>Lost</option><option>Found</option></select><input name="title" placeholder="Item (e.g. black wallet)" required><textarea name="body" placeholder="Where and when, and how to contact you" required></textarea>', btn:'Post item', head:r=>r.kind + ': ' + r.title, text:r=>r.body },
   households: { title:'Household records', post:'resident', private:true, fields:'<input name="title" placeholder="Household head" required><input name="members" type="number" min="1" placeholder="Number of members" required><textarea name="body" placeholder="Member names and ages, notes (PWD, senior, 4Ps)"></textarea>', btn:'Save household', head:r=>r.title, text:r=>r.members + ' members. ' + (r.body || ''), cols:[['Date',r=>fmt(r.createdAt)],['Head',r=>r.title],['Purok',r=>r.purok],['Members',r=>r.members],['Notes',r=>r.body]] },
@@ -64,6 +64,64 @@ const FORMS = {
   complaints: { title:'Complaints & blotter', post:'resident', st:['Open','Investigating','Resolved'], cols:[['Date',r=>fmt(r.createdAt)],['Complainant',r=>r.name],['Purok',r=>r.purok],['Subject',r=>r.title],['Details',r=>r.body],['Status',r=>r.status]], fields:'<input name="title" placeholder="Subject" required><textarea name="body" placeholder="What happened? Include date, place, and people involved." required></textarea>', btn:'File complaint', head:r=>r.title, text:r=>r.body }
 };
 
+const I = (n, ph, req = 'required') => `<input name="${n}" placeholder="${ph}" ${req}>`, T = (ph, req = 'required') => `<textarea name="body" placeholder="${ph}" ${req}></textarea>`;
+Object.assign(FORMS, {
+  programs: { title:'Programs & services', post:'official', fields:I('title','Program name')+T('Details, schedule, requirements'), btn:'Add program', head:r=>r.title, text:r=>r.body },
+  jobs: { title:'Job board', post:'official', fields:I('title','Job title')+I('contact','Contact / where to apply')+T('Requirements'), btn:'Post job', head:r=>r.title, text:r=>r.body + ' · Apply: ' + (r.contact || 'barangay hall') },
+  ordinances: { title:'Ordinances & resolutions', post:'official', fields:I('title','Title')+I('ref','Number (e.g. Ord. 2026-03)')+T('Summary'), btn:'Publish', head:r=>(r.ref ? r.ref + ': ' : '') + r.title, text:r=>r.body },
+  budget: { title:'Budget transparency', post:'official', fields:I('title','Project / item')+'<input name="amount" type="number" min="0" placeholder="Amount (PHP)" required>'+T('Details', ''), btn:'Add record', head:r=>r.title, text:r=>'PHP ' + Number(r.amount || 0).toLocaleString() + ' · ' + (r.body || '') },
+  evac: { title:'Evacuation centers', post:'official', fields:I('title','Center name')+'<input name="capacity" type="number" placeholder="Capacity">'+T('Address / directions'), btn:'Add center', head:r=>r.title, text:r=>'Capacity ' + (r.capacity || '?') + ' · ' + r.body },
+  health: { title:'Health & vaccination', post:'official', fields:I('title','Activity')+'<input name="date" type="date" required>'+T('Venue and who can join'), btn:'Add schedule', head:r=>r.title, text:r=>r.body },
+  garbage: { title:'Waste collection schedule', post:'official', fields:I('title','Purok / area')+T('Days and time'), btn:'Add schedule', head:r=>r.title, text:r=>r.body },
+  relief: { title:'Relief distribution', post:'official', fields:I('title','Relief item / program')+'<input name="date" type="date" required>'+T('Who qualifies and where to claim'), btn:'Announce', head:r=>r.title, text:r=>r.body },
+  reports: { title:'Report a problem', post:'resident', st:['Reported','Working','Fixed'], fields:I('title','Problem (e.g. broken streetlight)')+T('Exact location and details')+'<input type="file" name="file" accept="image/*">', btn:'Send report', head:r=>r.title, text:r=>r.body },
+  idapps: { title:'Barangay ID', post:'resident', st:['Pending','Approved','Ready'], fields:'<input name="title" value="Barangay ID application" readonly>'+T('Birthdate, address, emergency contact')+'<input type="file" name="file" accept="image/*">', btn:'Apply', head:r=>r.title, text:r=>r.body },
+  appointments: { title:'Appointments', post:'resident', st:['Requested','Confirmed','Done','Cancelled'], cols:[['Date',r=>r.date],['Name',r=>r.name],['Purok',r=>r.purok],['Reason',r=>r.title],['Status',r=>r.status]], fields:I('title','Reason (e.g. mediation, consultation)')+'<input name="date" type="date" required>'+T('Notes',''), btn:'Request appointment', head:r=>r.title, text:r=>r.body || '' },
+  suggestions: { title:'Suggestion box', post:'resident', private:true, fields:T('Your idea or concern for the barangay'), btn:'Send', head:r=>'Suggestion', text:r=>r.body },
+  registry: { title:'Senior / PWD registry', post:'resident', private:true, cols:[['Name',r=>r.name],['Purok',r=>r.purok],['Type',r=>r.title],['Notes',r=>r.body]], fields:'<select name="title"><option>Senior citizen</option><option>PWD</option><option>Solo parent</option><option>4Ps</option></select>'+T('Name of person and details',''), btn:'Register', head:r=>r.title, text:r=>r.body || '' },
+  volunteers: { title:'Volunteer sign-up', post:'resident', private:true, fields:I('title','What can you help with?')+T('Skills and availability',''), btn:'Sign up', head:r=>r.title, text:r=>r.body || '' }
+});
+const MORE = [['events'],['lostfound'],['complaints'],['programs'],['jobs'],['ordinances'],['budget'],['evac'],['health'],['garbage'],['relief'],['reports'],['idapps'],['appointments'],['suggestions'],['registry'],['volunteers'],['polls'],['households'],['map'],['officials'],['hotlines'],['myid'],['gobag'],['residents'],['broadcast'],['backup'],['settings'],['profile']], OFFONLY = ['residents','broadcast','backup'];
+const NAME = { myid:'Digital ID', gobag:'Go-bag', settings:'Settings', broadcast:'Broadcast', backup:'Backup', residents:'Residents', map:'Live map', officials:'Directory', hotlines:'Hotlines', profile:'My profile', polls:'Polls' };
+function more(el) {
+  const off = me.role === 'official', nk = [...document.querySelectorAll('#nav button')].map(b => b.dataset.v);
+  const L = MORE.map(m => m[0]).filter(k => !nk.includes(k) && !(k === 'myid' && off) && !(OFFONLY.includes(k) && !off));
+  el.innerHTML = '<h2>All services</h2><input id="q" placeholder="Search services"><div class="quick big" id="g"></div>';
+  const draw = () => { const k = $('#q').value.toLowerCase(); $('#g').innerHTML = L.filter(x => (NAME[x] || FORMS[x].title).toLowerCase().includes(k)).map(x => `<button data-v="${x}"><em>${IC[x] || '•'}</em>${NAME[x] || FORMS[x].title}</button>`).join(''); };
+  $('#q').oninput = draw; draw(); $('#g').onclick = e => { const b = e.target.closest('button'); b && go(b.dataset.v); };
+}
+function myid(el) {
+  el.innerHTML = `<h2>Digital ID</h2><div class="idcard"><div><small>BARANGAY MANTULANG · PASSI CITY</small><h2>${esc(me.name)}</h2><p>${esc(me.purok || 'No purok')} · ${me.verified ? '✔ Verified' : 'Not verified'}</p><small>ID ${me.uid.slice(0, 8).toUpperCase()}</small></div><div id="qr"></div></div><p class="muted">Show this QR at the barangay hall.</p>`;
+  window.QRCode && new QRCode($('#qr'), { text: 'MANTULANG:' + me.uid, width: 110, height: 110 });
+}
+function broadcast(el) {
+  el.innerHTML = '<h2>Broadcast</h2><form class="card" id="f"><input name="t" placeholder="Message to all residents" required><button class="btn">Send to everyone</button></form>';
+  $('#f').onsubmit = async e => {
+    e.preventDefault(); const t = e.target.t.value, rs = (await getDocs(collection(db, 'users'))).docs.filter(d => d.data().role === 'resident');
+    if (!confirm('Send to ' + rs.length + ' residents?')) return;
+    await Promise.all(rs.map(d => addDoc(collection(db, 'notifications'), { to: d.id, text: '📢 ' + t, read: false, createdAt: serverTimestamp() }))); e.target.reset(); toast('Sent to ' + rs.length);
+  };
+}
+function backup(el) {
+  el.innerHTML = '<h2>Backup</h2><div class="card"><p>Download all barangay data as one JSON file.</p><button class="btn" id="bk">Download backup</button></div>';
+  $('#bk').onclick = async () => {
+    const o = {}; for (const c of ['users','announcements','events','officials','polls','votes','lostfound','requests','complaints','alerts','households',...Object.keys(FORMS)]) { if (o[c]) continue; try { o[c] = (await getDocs(collection(db, c))).docs.map(d => ({ id: d.id, ...d.data() })); } catch (_) {} }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(o)], { type: 'application/json' })); a.download = 'mantulang-backup-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); toast('Backup downloaded');
+  };
+}
+function gobag(el) {
+  const I2 = ['Water (3 days)','Canned food','Flashlight and batteries','First-aid kit','Medicines','Copies of documents','Power bank','Radio','Whistle','Cash','Clothes and blanket','Face masks']; let s = {}; try { s = JSON.parse(localStorage.gobag || '{}'); } catch (_) {}
+  el.innerHTML = '<h2>Emergency go-bag</h2><div class="card" id="gb">' + I2.map((x, i) => `<label class="chk"><input type="checkbox" data-i="${i}" ${s[i] ? 'checked' : ''}> ${x}</label>`).join('') + '</div>';
+  $('#gb').onchange = e => { s[e.target.dataset.i] = e.target.checked; localStorage.gobag = JSON.stringify(s); };
+}
+function settings(el) {
+  el.innerHTML = '<h2>Settings</h2><div class="card"><h3>Text size</h3><input type="range" id="fs" min="14" max="22" value="' + (parseInt(localStorage.fs) || 16) + '"></div><div class="card" id="ac"><h3>Accent color</h3><div class="row" style="justify-content:flex-start">' + [['#1f5e3b','#2f8a57'],['#1c4a8c','#3b7bd4'],['#7a2a8c','#b45fd0'],['#b4391f','#e2623f']].map(c => `<button class="dot" data-a="${c}" style="background:linear-gradient(135deg,${c[0]},${c[1]})"></button>`).join('') + '</div></div>';
+  $('#fs').oninput = e => { localStorage.fs = e.target.value; applyPrefs(); };
+  $('#ac').onclick = e => { const b = e.target.closest('.dot'); if (b) { localStorage.acc = b.dataset.a; applyPrefs(); } };
+}
+function applyPrefs() { const r = document.documentElement.style, c = (localStorage.acc || '').split(','); r.fontSize = (parseInt(localStorage.fs) || 16) + 'px'; if (c[1]) { r.setProperty('--green', c[0]); r.setProperty('--green2', c[1]); } }
+applyPrefs();
+
 function live(col, mine, render) {
   unsub && unsub();
   const q = mine ? query(collection(db, col), where('uid', '==', me.uid)) : collection(db, col);
@@ -71,9 +129,9 @@ function live(col, mine, render) {
 }
 
 function go(v) {
-  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v || (b.dataset.v === 'more' && !document.querySelector('#nav [data-v="' + v + '"]'))));
   const el = $('#view'); unsub && unsub(); el.innerHTML = '';
-  ({ home, hotlines, dash, sos, alerts, residents, profile, polls, notes, map: livemap, chat }[v] || (() => page(v, el)))(el);
+  ({ more, myid, broadcast, backup, gobag, settings, home, hotlines, dash, sos, alerts, residents, profile, polls, notes, map: livemap, chat }[v] || (() => page(v, el)))(el);
 }
 
 function printCert(r) {
@@ -108,6 +166,7 @@ function page(col, el) {
       <div class="row" style="justify-content:flex-start;margin-top:10px">
       ${off && F.st ? F.st.map(s => `<button class="btn sm ${s === r.status ? 'gold' : ''}" data-id="${r.id}" data-s="${s}">${s}</button>`).join('') : ''}
       ${F.cert && ['Approved', 'Released'].includes(r.status) ? `<button class="btn sm" data-p="${r.id}">Print certificate</button>` : ''}
+      ${off && F.post === 'official' ? `<button class="btn sm" data-edit="${r.id}">Edit</button>` : ''}
       ${(off || r.uid === me.uid) && !F.st ? `<button class="btn sm red" data-del="${r.id}">Delete</button>` : ''}</div></div>`).join('') : '<div class="empty">Nothing here yet.</div>';
   };
   $('#q').oninput = draw; if ($('#rep')) { $('#rep').onclick = () => printReport(F, all); $('#csv').onclick = () => csv(F, all); }
@@ -115,6 +174,7 @@ function page(col, el) {
   $('#list').onclick = async e => {
     const b = e.target;
     if (b.dataset.s) { await updateDoc(doc(db, col, b.dataset.id), { status: b.dataset.s }); const r = all.find(x => x.id === b.dataset.id); await addDoc(collection(db, 'notifications'), { to: r.uid, text: 'Your ' + r.title + ' is now ' + b.dataset.s, read: false, createdAt: serverTimestamp() }); toast('Marked ' + b.dataset.s); }
+    if (b.dataset.edit) { const r = all.find(x => x.id === b.dataset.edit), t = prompt('Title', r.title); if (t === null) return; const bd = prompt('Details', r.body ?? ''); await updateDoc(doc(db, col, r.id), { title: t, ...(bd !== null ? { body: bd } : {}) }); toast('Updated'); }
     if (b.dataset.p) printCert(all.find(r => r.id === b.dataset.p));
     if (b.dataset.del && confirm('Delete this entry?')) { await deleteDoc(doc(db, col, b.dataset.del)); toast('Deleted'); }
   };
@@ -135,6 +195,8 @@ async function dash(el) {
   const defs = [['users','Residents'],['requests','Requests'],['complaints','Complaints'],['alerts','Alerts'],['households','Households']];
   const snaps = await Promise.all(defs.map(d => getDocs(collection(db, d[0]))));
   $('#st').innerHTML = defs.map((d, i) => `<div class="stat" style="animation-delay:${i * 80}ms"><b data-n="${snaps[i].size}">0</b>${d[1]}</div>`).join('');
+  const pk = {}; snaps[0].docs.map(d => d.data()).filter(u => u.role === 'resident').forEach(u => { const p = u.purok || 'No purok'; pk[p] = (pk[p] || 0) + 1; }); const mx = Math.max(1, ...Object.values(pk));
+  $('#view').insertAdjacentHTML('beforeend', '<h3 class="sec">Residents per purok</h3>' + Object.entries(pk).map(([p, n]) => `<div class="bar"><i style="width:${n * 100 / mx}%"></i><span>${esc(p)}: ${n}</span></div>`).join(''));
   const pend = snaps[1].docs.filter(d => d.data().status === 'Pending').length, opn = snaps[2].docs.filter(d => d.data().status !== 'Resolved').length;
   $('#st').insertAdjacentHTML('beforeend', [['⏳ Pending requests', pend], ['⚠️ Open complaints', opn]].map(x => `<div class="stat warn"><b data-n="${x[1]}">0</b>${x[0]}</div>`).join(''));
   document.querySelectorAll('[data-n]').forEach(b => { const n = +b.dataset.n; let c = 0; const t = setInterval(() => { c += Math.max(1, Math.ceil(n / 20)); if (c >= n) { c = n; clearInterval(t); } b.textContent = c; }, 40); });
@@ -155,12 +217,12 @@ function residents(el) {
   let all = [];
   const draw = () => {
     const k = $('#q').value.toLowerCase(), rows = all.filter(r => r.role === 'resident' && JSON.stringify(Object.values(r)).toLowerCase().includes(k));
-    $('#list').innerHTML = rows.map(r => `<div class="card"><div class="row"><h3>${esc(r.name)}</h3><span class="badge ${r.verified ? 'Approved' : 'Pending'}">${r.verified ? 'Verified' : 'Not verified'}</span></div><div class="muted">${esc(r.purok) || 'No purok'} · ${esc(r.email)}${r.phone ? ' · ' + esc(r.phone) : ''}</div><button class="btn sm ${r.verified ? 'red' : ''}" style="margin-top:10px" data-id="${r.id}" data-ok="${r.verified ? 0 : 1}">${r.verified ? 'Remove verification' : 'Verify resident'}</button></div>`).join('') || '<div class="empty">No residents yet.</div>';
+    $('#list').innerHTML = rows.map(r => `<div class="card"><div class="row"><h3>${esc(r.name)}</h3><span class="badge ${r.verified ? 'Approved' : 'Pending'}">${r.verified ? 'Verified' : 'Not verified'}</span></div><div class="muted">${esc(r.purok) || 'No purok'} · ${esc(r.email)}${r.phone ? ' · ' + esc(r.phone) : ''}</div><button class="btn sm ${r.verified ? 'red' : ''}" style="margin-top:10px" data-id="${r.id}" data-ok="${r.verified ? 0 : 1}">${r.verified ? 'Remove verification' : 'Verify resident'}</button> <button class="btn sm gold" style="margin-top:10px" data-up="${r.id}">Make official</button></div>`).join('') || '<div class="empty">No residents yet.</div>';
   };
   $('#q').oninput = draw;
   live('users', false, r => { all = r; draw(); });
   $('#list').onclick = async e => {
-    const b = e.target; if (!b.dataset.id) return;
+    const b = e.target; if (b.dataset.up) { if (confirm('Make this person a barangay official? They get full admin access.')) { await updateDoc(doc(db, 'users', b.dataset.up), { role: 'official' }); toast('Promoted to official'); } return; } if (!b.dataset.id) return;
     const v = b.dataset.ok === '1';
     await updateDoc(doc(db, 'users', b.dataset.id), { verified: v });
     if (v) await addDoc(collection(db, 'notifications'), { to: b.dataset.id, text: 'Your account is verified. You can now request certificates.', read: false, createdAt: serverTimestamp() });
