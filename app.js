@@ -67,6 +67,7 @@ async function boot(u) {
   $('#nav').innerHTML = nav.map(n => `<button data-v="${n[0]}"><em>${IC[n[0]] || '•'}</em><span>${n[1]}</span></button>`).join('');
   $('#nav').onclick = e => { const b = e.target.closest('button'); b && go(b.dataset.v); };
   watchNotes(); go(nav[0][0]);
+  onSnapshot(doc(db, 'users', u.uid), x => { if (x.exists() && x.data().role !== me.role && Date.now() - (+sessionStorage.rl || 0) > 8000) { sessionStorage.rl = Date.now(); location.reload(); } });
 }
 
 /* ---------- Views ---------- */
