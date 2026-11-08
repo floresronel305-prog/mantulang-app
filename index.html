@@ -28,13 +28,17 @@ setTimeout(out,3600);s.addEventListener('click',out)})()</script>
     <h2 id="authTitle">Welcome back</h2>
     <p class="muted sub" id="authSub">Log in to use barangay services.</p>
     <div id="regFields" hidden>
-      <input name="name" placeholder="Full name">
-      <input name="purok" placeholder="Purok / Sitio">
+      <label class="fld"><b>👤</b><input name="name" placeholder="Full name" autocomplete="name"></label>
+      <label class="fld"><b>📍</b><input name="purok" placeholder="Purok / Sitio"></label>
+    </div>
+    <label class="fld"><b>✉️</b><input name="email" type="text" placeholder="Email (recommended) or username" required autocapitalize="none" autocomplete="username"></label>
+    <label class="fld"><b>🔒</b><input name="password" id="pw" type="password" placeholder="Password (6+ characters)" minlength="6" required autocomplete="current-password"><button type="button" class="eye" id="eye" aria-label="Show or hide password">👁</button></label>
+    <div id="regFields2" hidden>
+      <div class="meter"><i id="mt"></i></div><small class="muted" id="mtx">Use 8+ characters with letters and numbers</small>
+      <label class="fld" style="margin-top:12px"><b>🔐</b><input name="password2" type="password" placeholder="Confirm password" autocomplete="new-password"></label>
       <label class="chk"><input type="checkbox" name="consent"> I agree to the Privacy Notice</label>
       <details class="muted"><summary>Read Privacy Notice</summary><p>We collect your name, purok and contact details, and only what you submit (requests, household, location). Used only for barangay services (RA 10173); visible only to you and authorized officials; not sold or shared. Ask the barangay hall to view, correct or delete your data. <i>Gagamitin lamang sa serbisyo ng barangay.</i></p></details>
     </div>
-    <input name="email" type="text" placeholder="Email (recommended) or username" required autocapitalize="none">
-    <input name="password" type="password" placeholder="Password (6+ characters)" minlength="6" required>
     <button class="btn" id="authBtn">Log in</button>
     <button type="button" class="btn gold install" hidden>Install app</button>
     <p class="muted foot">Developed by Ronel Sigaya Flores · BSIT, PHINMA University of Iloilo</p>

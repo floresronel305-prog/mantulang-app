@@ -21,12 +21,14 @@ function setMode(up) {
   signup = up; const box = $('#authForm');
   $('#tabs').classList.toggle('up', up);
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', (b.dataset.m === 'up') === up));
-  $('#regFields').hidden = !up; $('#forgot').parentNode.hidden = up;
+  $('#regFields').hidden = !up; $('#regFields2').hidden = !up; $('#forgot').parentNode.hidden = up;
   $('#authTitle').textContent = up ? 'Create your account' : 'Welcome back';
   $('#authSub').textContent = up ? 'Sign up as a resident of Barangay Mantulang.' : 'Log in to use barangay services.';
   $('#authBtn').textContent = up ? 'Create account' : 'Log in';
-  box.classList.remove('swap'); void box.offsetWidth; box.classList.add('swap');
+  box.classList.remove('swap'); void box.offsetWidth; box.classList.add('swap'); if (up) setTimeout(() => box.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 120);
 }
+$('#eye').onclick = () => { const p = $('#pw'), h = p.type === 'password'; p.type = h ? 'text' : 'password'; $('#eye').textContent = h ? '🙈' : '👁'; };
+$('#pw').oninput = () => { const v = $('#pw').value, n = (v.length >= 8) + /[A-Z]/.test(v) + /\d/.test(v) + /[^\w\s]/.test(v) + (v.length >= 12), m = $('#mt'); m.style.width = Math.min(100, n * 20 + (v ? 10 : 0)) + '%'; m.style.background = n < 2 ? '#e0523f' : n < 4 ? '#f0a92e' : '#2fb36b'; $('#mtx').textContent = !v ? 'Use 8+ characters with letters and numbers' : n < 2 ? 'Weak password' : n < 4 ? 'Fair: add numbers or symbols' : 'Strong password'; };
 $('#tabs').onclick = e => { const b = e.target.closest('button'); b && setMode(b.dataset.m === 'up'); };
 $('#forgot').onclick = async e => {
   e.preventDefault(); const v = $('#authForm').email.value.trim();
@@ -40,6 +42,7 @@ $('#authForm').onsubmit = async e => {
   try {
     if (signup) {
       if (!f.name?.trim()) return toast('Enter your full name');
+      if (f.password !== f.password2) return toast('Passwords do not match');
       if (!f.consent) return toast('Please agree to the Privacy Notice');
       registering = true;
       const c = await createUserWithEmailAndPassword(auth, f.email, f.password);
