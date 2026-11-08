@@ -114,10 +114,10 @@ function gobag(el) {
   el.innerHTML = '<h2>Emergency go-bag</h2><div class="card" id="gb">' + I2.map((x, i) => `<label class="chk"><input type="checkbox" data-i="${i}" ${s[i] ? 'checked' : ''}> ${x}</label>`).join('') + '</div>';
   $('#gb').onchange = e => { s[e.target.dataset.i] = e.target.checked; localStorage.gobag = JSON.stringify(s); };
 }
-const PAL = [['Forest','#1f5e3b','#2f8a57'],['Ocean','#1c4a8c','#3b7bd4'],['Royal','#5b2a8c','#8f5fd0'],['Crimson','#a02a2a','#e05050'],['Sunset','#b5521a','#ef8a3c'],['Teal','#0f6b6b','#25a8a8'],['Rose','#a8325e','#e0679a'],['Slate','#34495e','#5f7d99'],['Indigo','#2c3a9c','#5a6cf0'],['Olive','#5a6b1f','#8fa636']];
+const PAL = [['Forest','#1f5e3b','#2f8a57'],['LGU Blue','#0b3d91','#1e6fe0'],['Royal','#5b2a8c','#8f5fd0'],['Crimson','#a02a2a','#e05050'],['Sunset','#b5521a','#ef8a3c'],['Teal','#0f6b6b','#25a8a8'],['Rose','#a8325e','#e0679a'],['Slate','#34495e','#5f7d99'],['Indigo','#2c3a9c','#5a6cf0'],['Olive','#5a6b1f','#8fa636']];
 function settings(el) {
   const draw = () => {
-    const cur = localStorage.acc || '#1f5e3b,#2f8a57', vm = localStorage.vm || 'auto', dk = document.documentElement.dataset.theme === 'dark', B = (on, v, t) => `<button class="${on ? 'on' : ''}" data-v="${v}">${t}</button>`;
+    const cur = localStorage.acc2 || '#0b3d91,#1e6fe0', vm = localStorage.vm || 'auto', dk = document.documentElement.dataset.theme === 'dark', B = (on, v, t) => `<button class="${on ? 'on' : ''}" data-v="${v}">${t}</button>`;
     el.innerHTML = `<h2>Settings</h2>
     <div class="card"><h3>Display mode</h3><p class="muted">Auto adapts to your screen. Desktop shows the full website layout. Phone shows the compact app layout.</p><div class="seg" id="vm">${B(vm === 'auto', 'auto', 'Auto') + B(vm === 'desktop', 'desktop', '🖥 Desktop') + B(vm === 'phone', 'phone', '📱 Phone')}</div></div>
     <div class="card"><h3>Appearance</h3><div class="seg" id="th">${B(!dk, 'light', '☀️ Light') + B(dk, 'dark', '🌙 Dark')}</div></div>
@@ -126,7 +126,7 @@ function settings(el) {
     $('#vm').onclick = e => { const b = e.target.closest('button'); if (b) { localStorage.vm = b.dataset.v; applyPrefs(); draw(); } };
     $('#th').onclick = e => { const b = e.target.closest('button'); if (b) { document.documentElement.dataset.theme = localStorage.theme = b.dataset.v; draw(); } };
     $('#fs').oninput = e => { localStorage.fs = e.target.value; applyPrefs(); };
-    $('#ac').onclick = e => { const b = e.target.closest('button'); if (b) { localStorage.acc = b.dataset.a; applyPrefs(); draw(); } };
+    $('#ac').onclick = e => { const b = e.target.closest('button'); if (b) { localStorage.acc2 = b.dataset.a; applyPrefs(); draw(); } };
   };
   draw();
 }
@@ -138,12 +138,12 @@ function about(el) {
   <p class="muted" style="text-align:center">Built with Firebase, Leaflet and OpenStreetMap.</p>`;
 }
 function applyPrefs() {
-  const r = document.documentElement, c = (localStorage.acc || '#1f5e3b,#2f8a57').split(','), vm = localStorage.vm || 'auto';
-  r.style.fontSize = (parseInt(localStorage.fs) || 16) + 'px'; r.style.setProperty('--green', c[0]); r.style.setProperty('--green2', c[1]); r.dataset.view = vm;
+  const r = document.documentElement, c = (localStorage.acc2 || '#0b3d91,#1e6fe0').split(','), vm = localStorage.vm || 'auto';
+  r.style.fontSize = (parseInt(localStorage.fs) || 16) + 'px'; r.style.setProperty('--green', c[0]); r.style.setProperty('--green2', c[1]); r.dataset.view = vm === 'auto' ? (innerWidth <= 760 || (matchMedia('(pointer:coarse)').matches && screen.width <= 820) ? 'phone' : 'desktop') : vm;
   const mv = document.querySelector('meta[name=viewport]'); mv && (mv.content = vm === 'desktop' ? 'width=1100' : 'width=device-width, initial-scale=1');
   const tc = document.querySelector('meta[name=theme-color]'); tc && (tc.content = c[0]);
 }
-applyPrefs();
+applyPrefs(); addEventListener('resize', applyPrefs);
 $('#vw').onclick = () => { const o = ['auto','desktop','phone']; localStorage.vm = o[(o.indexOf(localStorage.vm || 'auto') + 1) % 3]; applyPrefs(); toast('View: ' + localStorage.vm); };
 
 function live(col, mine, render) {

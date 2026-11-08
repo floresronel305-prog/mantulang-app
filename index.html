@@ -6,15 +6,18 @@
 <title>Barangay Mantulang, Passi City</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1f5e3b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0b3d91"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute"><symbol id="lgu" viewBox="0 0 120 120"><circle cx="60" cy="60" r="58" fill="#fff"/><circle cx="60" cy="60" r="52" fill="#0b3d91"/><circle cx="60" cy="60" r="47" fill="none" stroke="#fff" stroke-width="1.4" stroke-dasharray="2 4"/><path d="M60 20l26 9v23c0 17-11 28-26 35-15-7-26-18-26-35V29z" fill="#fff"/><path d="M60 28l19 6.500v17c0 12.500-8 21-19 26.500-11-5.500-19-14-19-26.500v-17z" fill="#1e6fe0"/><path d="M60 36l3.500 7.500 8 1-6 5.500 1.700 8L60 54l-7.200 3.500 1.700-8-6-5.500 8-1z" fill="#fff"/><text x="60" y="73" text-anchor="middle" font-size="12" font-weight="800" fill="#fff" font-family="Arial,sans-serif">LGU</text><text x="60" y="104" text-anchor="middle" font-size="9.500" font-weight="800" fill="#fff" font-family="Arial,sans-serif" letter-spacing=".5">PASSI CITY</text></symbol></svg>
+<div id="splash"><div class="sp-wrap"><i class="sp-ring"></i><i class="sp-ring r2"></i><i class="sp-ring r3"></i><span class="lgu"><svg viewBox="0 0 120 120"><use href="#lgu"/></svg><img src="lgu-logo.png" alt="" onload="this.parentNode.classList.add('real')"></span><div class="sp-t">LGU PASSI CITY</div><div class="sp-s">Barangay Mantulang</div><div class="sp-bar"><i></i></div></div></div>
+<script>setTimeout(function(){var s=document.getElementById('splash');if(s){s.classList.add('out');setTimeout(function(){s.remove()},800)}},2600)</script>
 <section id="auth" class="auth">
-  <div class="auth-art"><h1>Barangay<br>Mantulang</h1><p>Passi City, Iloilo<br>Public service, closer to you.</p></div>
+  <div class="auth-art"><span class="lgu big"><svg viewBox="0 0 120 120"><use href="#lgu"/></svg><img src="lgu-logo.png" alt="" onload="this.parentNode.classList.add('real')"></span><h1>Barangay<br>Mantulang</h1><p>Passi City, Iloilo<br>Public service, closer to you.</p></div>
   <form id="authForm" class="auth-box">
     <h2 id="authTitle">Sign in</h2>
     <div id="regFields" hidden>
@@ -31,8 +34,9 @@
 </section>
 
 <div id="app" class="app" hidden>
+  <header class="top"><span class="lgu sm"><svg viewBox="0 0 120 120"><use href="#lgu"/></svg><img src="lgu-logo.png" alt="" onload="this.parentNode.classList.add('real')"></span><div><b>Barangay Mantulang</b><small>LGU Passi City</small></div></header>
   <aside class="side">
-    <div class="brand">Mantulang</div>
+    <div class="brand"><span class="lgu sm"><svg viewBox="0 0 120 120"><use href="#lgu"/></svg><img src="lgu-logo.png" alt="" onload="this.parentNode.classList.add('real')"></span>Mantulang</div>
     <nav id="nav"></nav>
     <div class="who"><b id="whoName"></b><span id="whoRole"></span><button class="link install" hidden>Install app</button><button class="link" id="vw">Desktop / phone view</button><button class="link" id="theme">Dark / light</button><button class="link" id="logout">Sign out</button></div>
   </aside>
