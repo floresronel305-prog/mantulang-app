@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, addDoc, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { firebaseConfig } from "./firebase-config.js";
@@ -13,14 +13,25 @@ $('#tout').onclick = () => $('#logout').click();
 $('#theme').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = localStorage.theme = t; };
 let me = null, nUnsub = null, uUnsub = null, watchId = null, unsub = null, registering = false, signup = false;
 
+addEventListener('unhandledrejection', e => { console.error(e.reason); toast(e.reason?.code === 'permission-denied' ? 'Not allowed for your account.' : 'Something went wrong. Please try again.'); });
 function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t.h); t.h = setTimeout(() => t.classList.remove('show'), 2600); }
 
 /* ---------- Auth ---------- */
-$('#authSwap').onclick = e => {
-  e.preventDefault(); signup = !signup;
-  $('#regFields').hidden = !signup;
-  $('#authTitle').textContent = $('#authBtn').textContent = signup ? 'Create account' : 'Sign in';
-  e.target.textContent = signup ? 'I already have an account' : 'Create a resident account';
+function setMode(up) {
+  signup = up; const box = $('#authForm');
+  $('#tabs').classList.toggle('up', up);
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', (b.dataset.m === 'up') === up));
+  $('#regFields').hidden = !up; $('#forgot').parentNode.hidden = up;
+  $('#authTitle').textContent = up ? 'Create your account' : 'Welcome back';
+  $('#authSub').textContent = up ? 'Sign up as a resident of Barangay Mantulang.' : 'Log in to use barangay services.';
+  $('#authBtn').textContent = up ? 'Create account' : 'Log in';
+  box.classList.remove('swap'); void box.offsetWidth; box.classList.add('swap');
+}
+$('#tabs').onclick = e => { const b = e.target.closest('button'); b && setMode(b.dataset.m === 'up'); };
+$('#forgot').onclick = async e => {
+  e.preventDefault(); const v = $('#authForm').email.value.trim();
+  if (!v.includes('@')) return toast('Username accounts: please visit the barangay hall for help');
+  try { await sendPasswordResetEmail(auth, v); toast('Reset link sent. Check your email.'); } catch (err) { toast('Could not send reset link'); }
 };
 $('#authForm').onsubmit = async e => {
   e.preventDefault();
@@ -28,7 +39,8 @@ $('#authForm').onsubmit = async e => {
   if (!f.email.includes('@')) f.email = f.email.trim().toLowerCase() + '@mantulang.ph';
   try {
     if (signup) {
-      if (!f.name) return toast('Enter your full name');
+      if (!f.name?.trim()) return toast('Enter your full name');
+      if (!f.consent) return toast('Please agree to the Privacy Notice');
       registering = true;
       const c = await createUserWithEmailAndPassword(auth, f.email, f.password);
       await setDoc(doc(db, 'users', c.user.uid), { name: f.name, purok: f.purok || '', email: f.email, role: 'resident', verified: false, createdAt: serverTimestamp() });
@@ -135,6 +147,7 @@ function about(el) {
   el.innerHTML = `<div class="hero"><small>About this app</small><h1>Barangay Mantulang</h1><p>Version 3.1 · Passi City, Iloilo</p></div>
   <div class="card"><h3>What is this app?</h3><p>A community app that brings barangay services to residents' phones: announcements, certificate requests, complaints, emergency alerts, a live map, chat and more. Officials manage everything from one dashboard.</p></div>
   <div class="card"><h3>Key features</h3><p>Certificates and Barangay ID · Complaints and blotter · SOS alerts · Live map · Chats and polls · Programs, jobs, ordinances and budget transparency · Digital ID · Installable and offline-ready.</p></div>
+  <div class="card"><h3>Privacy Notice (RA 10173)</h3><p>Barangay Mantulang collects your name, purok and contact details, and, only if you submit them, household, senior/PWD records, requests and live location. These are used only for barangay services and are visible only to you and authorized officials. Data is not sold or shared outside the barangay unless required by law. You may ask to view, correct or delete your data at the barangay hall. <i>Ang iyong datos ay gagamitin lamang sa serbisyo ng barangay.</i></p></div>
   <div class="card dev"><span class="av">RF</span><div><small>DEVELOPER</small><h3>Ronel Sigaya Flores</h3><p>First Year College · BSIT<br>PHINMA University of Iloilo</p></div></div>
   <p class="muted" style="text-align:center">Built with Firebase, Leaflet and OpenStreetMap.</p>`;
 }
@@ -229,12 +242,12 @@ async function dash(el) {
 }
 
 function sos(el) {
-  el.innerHTML = '<h2>Emergency</h2><p class="muted">Press and hold is not required. One tap alerts the barangay officials with your name and purok.</p><button class="sos" id="sos">SOS</button>';
+  el.innerHTML = '<h2>Emergency</h2><p class="muted">One tap alerts barangay officials with your name, purok and location. Officials see it only while they have the app open, so for life-threatening emergencies also call <b>911</b> or the barangay hotline.</p><button class="sos" id="sos">SOS</button>';
   $('#sos').onclick = async () => { if (!confirm('Send an emergency alert to barangay officials?')) return; const pos = await new Promise(r => navigator.geolocation ? navigator.geolocation.getCurrentPosition(p => r(p.coords), () => r(null), { timeout: 6000 }) : r(null)); await addDoc(collection(db, 'alerts'), { uid: me.uid, name: me.name, purok: me.purok || '', lat: pos ? pos.latitude : null, lng: pos ? pos.longitude : null, createdAt: serverTimestamp() }); toast('Alert sent. Help is being notified.'); };
 }
 
 function alerts(el) {
-  el.innerHTML = '<h2>Emergency alerts</h2><div id="list"></div>';
+  el.innerHTML = '<h2>Emergency alerts</h2><p class="muted">Alerts appear only while this app is open. Keep it open on duty phones and call back every SOS.</p><div id="list"></div>';
   live('alerts', false, rows => $('#list').innerHTML = rows.length ? rows.map(r => `<div class="card"><div class="row"><h3>${esc(r.name)}</h3><span class="badge Rejected">SOS</span></div><p>Purok: ${esc(r.purok) || 'n/a'}</p>${r.lat ? `<p><a href="https://maps.google.com/?q=${r.lat},${r.lng}" target="_blank" rel="noopener">Open location in map</a></p>` : ''}<div class="muted">${fmt(r.createdAt)}</div></div>`).join('') : '<div class="empty">No alerts.</div>');
 }
 
@@ -335,6 +348,7 @@ function livemap(el) {
   $('#gt').onclick = () => {
     if (watchId != null) { navigator.geolocation.clearWatch(watchId); watchId = null; deleteDoc(doc(db, 'locations', me.uid)); $('#gt').textContent = 'Share my location'; return toast('Location sharing stopped'); }
     if (!navigator.geolocation) return toast('GPS is not supported on this device');
+    if (!confirm('Share your live location with barangay officials until you tap Stop sharing?')) return;
     watchId = navigator.geolocation.watchPosition(p => setDoc(doc(db, 'locations', me.uid), { lat: p.coords.latitude, lng: p.coords.longitude, name: me.name, purok: me.purok || '', updatedAt: serverTimestamp() }), () => toast('Allow location access in your browser'), { enableHighAccuracy: true, maximumAge: 5000 });
     $('#gt').textContent = 'Stop sharing'; toast('Sharing your live location');
   };

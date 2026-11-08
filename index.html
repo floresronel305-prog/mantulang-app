@@ -24,17 +24,21 @@ setTimeout(out,3600);s.addEventListener('click',out)})()</script>
 <section id="auth" class="auth">
   <div class="auth-art"><span class="lgu big"><svg viewBox="0 0 120 120"><use href="#lgu"/></svg><img src="lgu-logo.png" alt="" onload="this.parentNode.classList.add('real')"></span><h1>Barangay<br>Mantulang</h1><p>Passi City, Iloilo<br>Public service, closer to you.</p></div>
   <form id="authForm" class="auth-box">
-    <h2 id="authTitle">Sign in</h2>
+    <div class="tabs" id="tabs" role="tablist"><i></i><button type="button" role="tab" data-m="in" class="on">Log in</button><button type="button" role="tab" data-m="up">Sign up</button></div>
+    <h2 id="authTitle">Welcome back</h2>
+    <p class="muted sub" id="authSub">Log in to use barangay services.</p>
     <div id="regFields" hidden>
       <input name="name" placeholder="Full name">
       <input name="purok" placeholder="Purok / Sitio">
+      <label class="chk"><input type="checkbox" name="consent"> I agree to the Privacy Notice</label>
+      <details class="muted"><summary>Read Privacy Notice</summary><p>We collect your name, purok and contact details, and only what you submit (requests, household, location). Used only for barangay services (RA 10173); visible only to you and authorized officials; not sold or shared. Ask the barangay hall to view, correct or delete your data. <i>Gagamitin lamang sa serbisyo ng barangay.</i></p></details>
     </div>
-    <input name="email" type="text" placeholder="Username or email" required autocapitalize="none">
+    <input name="email" type="text" placeholder="Email (recommended) or username" required autocapitalize="none">
     <input name="password" type="password" placeholder="Password (6+ characters)" minlength="6" required>
-    <button class="btn" id="authBtn">Sign in</button>
+    <button class="btn" id="authBtn">Log in</button>
     <button type="button" class="btn gold install" hidden>Install app</button>
     <p class="muted foot">Developed by Ronel Sigaya Flores · BSIT, PHINMA University of Iloilo</p>
-    <p class="muted"><a href="#" id="authSwap">Create a resident account</a></p>
+    <p class="muted"><a href="#" id="forgot">Forgot password?</a></p>
   </form>
 </section>
 

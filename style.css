@@ -244,3 +244,18 @@ body::after{background:var(--gold);opacity:.28}
 .rip{position:absolute;border-radius:50%;background:currentColor;opacity:.25;transform:scale(0);animation:rip .65s ease-out forwards;pointer-events:none}
 @keyframes rip{to{transform:scale(2.6);opacity:0}}
 html[data-view=phone] .top{backdrop-filter:blur(14px)}
+
+/* auth tabs + animations */
+.tabs{position:relative;display:grid;grid-template-columns:1fr 1fr;padding:4px;margin-bottom:18px;border-radius:14px;background:color-mix(in srgb,var(--green2) 14%,transparent);animation:rise .7s .1s cubic-bezier(.2,.8,.2,1) both}
+.tabs i{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:10px;background:linear-gradient(135deg,var(--green),var(--green2));box-shadow:0 6px 16px #0b3d9155;transition:transform .45s cubic-bezier(.3,1.4,.5,1)}
+.tabs.up i{transform:translateX(100%)}
+.tabs button{position:relative;z-index:1;background:none;border:0;padding:11px;font:inherit;font-weight:700;color:var(--ink);cursor:pointer;border-radius:10px;transition:color .3s}
+.tabs button.on{color:#fff}
+.auth-box .sub{margin:-8px 0 14px}
+.auth-box{animation:rise .8s cubic-bezier(.2,.8,.2,1) both}
+.auth-box input{animation:rise .6s cubic-bezier(.2,.8,.2,1) both}
+.auth-box input:nth-of-type(2){animation-delay:.08s}.auth-box input:nth-of-type(3){animation-delay:.16s}
+#regFields:not([hidden]){animation:slideIn .5s cubic-bezier(.2,.8,.2,1) both;transform-origin:top}
+.auth-box.swap h2,.auth-box.swap .sub,.auth-box.swap #authBtn{animation:swapIn .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes slideIn{from{opacity:0;transform:translateY(-14px) scaleY(.9)}to{opacity:1;transform:none}}
+@keyframes swapIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
