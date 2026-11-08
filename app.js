@@ -69,13 +69,59 @@ $('#accts').onclick = e => {
 $('#swacc').onclick = $('#tsw').onclick = () => { localStorage.mt_sw = '1'; $('#logout').click(); };
 document.addEventListener('click', e => { const g = e.target.closest('[data-go]'); g && $('#view').contains(g) && go(g.dataset.go); });
 document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-go]')) { e.preventDefault(); go(e.target.dataset.go); } });
-onAuthStateChanged(auth, u => { if (registering) return; u ? boot(u) : (me = null, unsub && unsub(), nUnsub && nUnsub(), uUnsub && uUnsub(), $('#app').hidden = true, $('#auth').hidden = false, renderAccts(), focusForm()); });
+/* ---- Mantulang Assistant: answers come from the app's own service guide (DESC/NAME) ---- */
+const AI_URL = ''; // optional: your own backend endpoint for a real AI model (see README). Never put an API key here.
+const KW = { requests:'certificate clearance indigency residency business permit sertipiko papel', complaints:'complaint reklamo blotter away gulo', events:'event activity kaganapan okasyon', lostfound:'lost found nawala nakita wallet cellphone', programs:'program serbisyo benepisyo', jobs:'job trabaho hanapbuhay employment', ordinances:'ordinance resolution batas ordinansa', budget:'budget pondo gastos proyekto transparency pera', evac:'evacuation evacuate bagyo baha typhoon flood center', health:'health vaccine bakuna kalusugan clinic', garbage:'garbage basura waste koleksyon trash', relief:'relief ayuda goods pagkain', reports:'report sira ilaw kalsada drainage streetlight problema', idapps:'barangay id apply', appointments:'appointment schedule mediation konsulta', suggestions:'suggestion mungkahi opinion', registry:'senior pwd solo parent 4ps registry', volunteers:'volunteer boluntaryo tumulong', polls:'poll survey boto vote', households:'household pamilya sambahayan', map:'map mapa location lokasyon', officials:'official kapitan kagawad directory contact numero opisyal', hotlines:'hotline hotlines 911 numero tawag', myid:'digital qr', gobag:'gobag go-bag bag checklist', settings:'settings theme dark kulay font', profile:'profile account pangalan purok mobile', chat:'chat message mensahe', notes:'notification abiso', announcements:'announcement anunsyo balita advisory', residents:'resident residente verify beripika', broadcast:'broadcast announce lahat', backup:'backup download data', alerts:'alert alerts', dash:'dashboard statistics bilang' };
+const LBL = { requests:'Certificates', sos:'Emergency (SOS)', chat:'Chats', notes:'Notifications', announcements:'Announcements', alerts:'Emergency alerts', dash:'Dashboard', more:'All services' };
+const lbl = k => NAME[k] || FORMS[k]?.title || LBL[k] || k;
+const STOP = new Set(['ang', 'mga', 'ako', 'paano', 'how', 'the', 'and', 'for', 'you', 'can', 'mag', 'ano', 'saan', 'may', 'gusto', 'nais', 'pwede', 'pano', 'kung', 'yung', 'ito', 'what', 'where', 'are', 'nang', 'ba', 'po']);
+const AIQ = ['Mag-request ng certificate', 'Mag-file ng reklamo', 'Emergency hotlines', 'Schedule ng basura', 'Evacuation center'];
+function aiMsg(t, who, keys) {
+  const m = $('#aim'), d = document.createElement('div'); d.className = 'ab ' + who;
+  if (who === 'me') d.textContent = t; else d.innerHTML = esc(t).replace(/\n/g, '<br>') + (keys && keys.length ? '<div class="abk">' + keys.map(k => `<button type="button" data-k="${k}">${IC[k] || '•'} ${esc(lbl(k))}</button>`).join('') + '</div>' : '');
+  m.append(d); m.scrollTop = m.scrollHeight; return d;
+}
+function aiLocal(q) {
+  const off = me.role === 'official', t = q.toLowerCase(), first = (me.name || '').split(' ')[0];
+  if (/^(hi|hello|hey|kumusta|kamusta|musta|magandang|good (morning|afternoon|evening))\b/.test(t)) return { t: `Kumusta, ${first}! Ako ang Mantulang Assistant. Itanong mo kung paano mag-request ng certificate, mag-report ng problema, o saan makikita ang isang serbisyo.`, k: [] };
+  if (/\b(salamat|thanks|thank you)\b/.test(t)) return { t: 'Walang anuman! May iba ka pa bang gustong itanong?', k: [] };
+  if (/\b(sos|saklolo|sunog|fire|ambulansya|ambulance|holdap|tulungan)\b|emergency/.test(t)) return { t: 'Kung nasa panganib ka, tumawag agad sa 911. Pagkatapos, pindutin ang SOS para maabisuhan ang mga opisyal ng barangay (nakikita lang nila ito kapag bukas ang app nila), at tawagan din ang hotline ng barangay.', k: ['sos', 'hotlines'] };
+  if (/(verify|verified|beripika|bakit.*(hindi|ayaw).*(request|certificate))/.test(t)) return off ? { t: 'Pumunta sa Residents at i-verify ang residente pagkatapos suriin ang valid ID niya.', k: ['residents'] } : { t: 'Kailangang verified ang account para makapag-request ng certificate. Ang barangay official ang nagve-verify pagkatapos suriin ang valid ID mo, kaya makipag-ugnayan sa barangay hall kung hindi pa verified ang account mo.', k: ['profile', 'officials'] };
+  if (/(password|nakalimutan|forgot)/.test(t)) return { t: 'Sa login screen, pindutin ang "Forgot password?" at ilagay ang email mo para makakuha ng reset link. Kung username lang ang gamit mo, pumunta sa barangay hall para sa tulong.', k: [] };
+  if (/(sino.*gumawa|who made|developer|gumawa nito)/.test(t)) return { t: 'Binuo ang app na ito ni Ronel Sigaya Flores, BSIT, PHINMA University of Iloilo.', k: ['about'] };
+  if (/(privacy|datos|data ko|ligtas ba)/.test(t)) return { t: 'Ginagamit lamang ang datos mo sa mga serbisyo ng barangay (RA 10173). Nakikita ito ng ikaw at ng mga awtorisadong opisyal lamang, at hindi ibinebenta o ibinabahagi. Para tingnan, ituwid o burahin ang datos mo, lumapit sa barangay hall.', k: ['profile'] };
+  const W = t.replace(/[^a-z0-9ñ\- ]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !STOP.has(w));
+  const keys = Object.keys(KW).filter(k => off || !['residents', 'broadcast', 'backup', 'alerts', 'dash'].includes(k));
+  const sc = keys.map(k => { const kw = KW[k].split(' '), d = (DESC[k]?.[0] || '').toLowerCase(); let s = 0; W.forEach(w => { if (kw.some(x => x === w || (w.length > 3 && (x.startsWith(w) || w.startsWith(x))))) s += 3; else if (d.includes(w)) s += 1; }); return [k, s]; }).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  if (!sc.length) return { t: 'Hindi ko pa sigurado ang sagot diyan. Subukang hanapin sa All services, o makipag-ugnayan sa barangay hall. Pwede mo ring itanong ang tungkol sa certificate, reklamo, basura, evacuation center o hotlines.', k: ['more', 'officials'] };
+  const k = sc[0][0], d = DESC[k];
+  return { t: d ? `${lbl(k)}: ${d[0]}\n${(off && d[2]) || d[1] || ''}` : `Makikita mo ito sa ${lbl(k)}.`, k: sc.map(x => x[0]) };
+}
+async function aiAsk(q) {
+  q = q.trim(); if (!q) return; aiMsg(q, 'me'); $('#aiq').value = '';
+  const ty = document.createElement('div'); ty.className = 'ab bot typ'; ty.innerHTML = '<i></i><i></i><i></i>'; $('#aim').append(ty); $('#aim').scrollTop = 9e9;
+  let r = aiLocal(q);
+  if (AI_URL) { try { const c = new AbortController(); setTimeout(() => c.abort(), 12000); const x = await fetch(AI_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: q, context: r.t, role: me.role }), signal: c.signal }); const j = await x.json(); if (j.reply) r = { t: String(j.reply).slice(0, 1500), k: r.k }; } catch (_) { } }
+  else await new Promise(s => setTimeout(s, 450));
+  ty.remove(); aiMsg(r.t, 'bot', r.k);
+}
+function aiOpen(o) {
+  $('#aip').hidden = !o; $('#aib').hidden = !!o || !me;
+  if (o) { if (!$('#aim').children.length) { aiMsg(`Kumusta, ${me.name.split(' ')[0]}! Ako ang Mantulang Assistant. Ano ang maitutulong ko?`, 'bot'); $('#aic').innerHTML = AIQ.map(x => `<button type="button" data-q="${x}">${x}</button>`).join(''); } if (innerWidth > 760) $('#aiq').focus(); }
+}
+function aiReset() { $('#aib').hidden = true; $('#aip').hidden = true; $('#aim').innerHTML = ''; }
+$('#aib').onclick = () => aiOpen(1); $('#aix').onclick = () => aiOpen(0);
+$('#aif').onsubmit = e => { e.preventDefault(); aiAsk($('#aiq').value); };
+$('#aic').onclick = e => { const b = e.target.closest('[data-q]'); b && aiAsk(b.dataset.q); };
+$('#aim').onclick = e => { const b = e.target.closest('[data-k]'); if (b) { go(b.dataset.k); (innerWidth <= 760 || document.documentElement.dataset.view === 'phone') && aiOpen(0); } };
+document.addEventListener('keydown', e => { e.key === 'Escape' && !$('#aip').hidden && aiOpen(0); });
+onAuthStateChanged(auth, u => { if (registering) return; u ? boot(u) : (me = null, unsub && unsub(), nUnsub && nUnsub(), uUnsub && uUnsub(), $('#app').hidden = true, $('#auth').hidden = false, renderAccts(), focusForm(), aiReset()); });
 
 async function boot(u) {
   const s = await getDoc(doc(db, 'users', u.uid));
   let d0 = s.exists() ? s.data() : null;
   if (!d0) { try { d0 = { name: (u.email || '').split('@')[0], purok: '', email: u.email || '', role: 'resident', verified: false, createdAt: serverTimestamp() }; await setDoc(doc(db, 'users', u.uid), d0); } catch (_) { toast('Profile not found'); return signOut(auth); } }
-  me = { uid: u.uid, ...d0 }; rememberAcct(me.email || u.email, me.name, me.role);
+  me = { uid: u.uid, ...d0 }; rememberAcct(me.email || u.email, me.name, me.role); $('#aib').hidden = false;
   $('#auth').hidden = true; $('#app').hidden = false;
   $('#whoName').textContent = me.name; setRole();
   const nav = me.role === 'official'

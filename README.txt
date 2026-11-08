@@ -20,3 +20,7 @@ Upload ALL files to the root of the GitHub repo (replace same names).
    - Pilot 2-4 weeks with officials + 10-20 residents, then launch.
    - SOS is supplementary: officials see it only while the app is open. Always publish 911/hotline numbers.
 KNOWN LIMITS: poll votes are technically readable by signed-in users; no push notifications when the app is closed.
+
+AI ASSISTANT (v4.1)
+ - The Assistant button (bottom-right) answers from the app's own service guide, in Filipino or English. It works offline and costs nothing.
+ - To connect a real AI model later: build a small server (e.g. on Render) that holds the AI API key as a secret, accepts POST {question, context, role} and returns {reply}. Then put its URL in AI_URL at the top of the assistant section of app.js. NEVER put an API key in app.js or anywhere in this public repo.
