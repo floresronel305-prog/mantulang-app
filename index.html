@@ -5,12 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Barangay Mantulang, Passi City: official public services app."><title>Barangay Mantulang, Passi City</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.webmanifest"><script>try{if(localStorage.vm==="desktop")document.querySelector("meta[name=viewport]").content="width=1100"}catch(e){}</script><meta name="theme-color" content="#0b3d91"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="futuristic.css">
 </head>
 <body>
 <canvas id="fx" aria-hidden="true"></canvas>
@@ -24,7 +25,18 @@ var P=document.getElementById('spp2'),T=document.getElementById('sps'),M=['BOOTI
 var done=0;function out(){if(done)return;done=1;s.classList.add('out');setTimeout(function(){s.remove()},1100)}
 setTimeout(out,3600);s.addEventListener('click',out)})()</script>
 <section id="auth" class="auth">
-  <div class="auth-art"><span class="lgu big"><svg viewBox="0 0 120 120"><use href="#lgu"/></svg><img src="lgu-logo.png" alt="" onload="this.parentNode.classList.add('real')"></span><h1>Barangay<br>Mantulang</h1><p>Passi City, Iloilo<br>Public service, closer to you.</p></div>
+  <div class="auth-art"><span class="lgu big"><svg viewBox="0 0 120 120"><use href="#lgu"/></svg><img src="lgu-logo.png" alt="" onload="this.parentNode.classList.add('real')"></span><h1>Barangay<br>Mantulang</h1><p>Passi City, Iloilo<br>Public service, closer to you.</p>
+  <div class="hud"><span class="pill"><i></i>SYSTEM ONLINE</span><span class="pill" id="clk">--:--</span><span class="pill">SECURE · RA 10173</span></div>
+  <ul class="feat">
+   <li><em>01</em><b>SOS Emergency</b><small>Agarang alerto sa mga opisyal ng barangay.</small></li>
+   <li><em>02</em><b>Certificates</b><small>Mag-request ng clearance at certificate online.</small></li>
+   <li><em>03</em><b>Complaints</b><small>Mag-report at subaybayan ang status.</small></li>
+   <li><em>04</em><b>Live Map</b><small>Mapa ng barangay at mga lokasyon.</small></li>
+   <li><em>05</em><b>Resident ID</b><small>Digital ID na may QR code.</small></li>
+   <li><em>06</em><b>Chat &amp; Polls</b><small>Kausapin ang barangay, bumoto sa mga usapin.</small></li>
+  </ul>
+  <div class="trust">OFFLINE-READY · INSTALLABLE PWA · LGU PASSI CITY</div>
+  <script>(function(){var c=document.getElementById('clk');function t(){c.textContent=new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit',hour12:false})+' PHT'}t();setInterval(t,30000)})()</script></div>
   <form id="authForm" class="auth-box">
     <div class="tabs" id="tabs" role="tablist"><i></i><button type="button" role="tab" data-m="in" class="on">Log in</button><button type="button" role="tab" data-m="up">Sign up</button></div>
     <h2 id="authTitle">Welcome back</h2>
